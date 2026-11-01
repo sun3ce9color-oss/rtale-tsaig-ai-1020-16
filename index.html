@@ -2412,7 +2412,7 @@ function recordCharacterBattle(cand, dateKey, startMinutes) {
             container.innerHTML = html;
         }
 
-        function renderInteractiveShiftArea(teams) {
+function renderInteractiveShiftArea(teams) {
             var dragEl = document.getElementById('shift-interactive-area');
             if (!teams || teams.length === 0) {
                 dragEl.innerHTML = '<span style="color:#888;">尚未點擊生成班表或目前無團隊組合。</span>';
@@ -2426,6 +2426,7 @@ function recordCharacterBattle(cand, dateKey, startMinutes) {
                 var isDragon = t.boss.includes('龍王') || t.size === 12;
                 var wideCardClass = isDragon ? 'dragon-wide-card' : '';
 
+                // 💡 恢復整張隊伍卡片的 draggable 與拖曳事件，讓 B 區可以自由拖拉交換整支隊伍
                 html += '<div class="shift-team-card ' + boxClass + ' ' + wideCardClass + '" draggable="true" ondragstart="dragWholeTeam(event, ' + teamIdx + ')" ondragover="allowDrop(event)" ondrop="dropWholeTeamSwap(event, ' + teamIdx + ')">' +
                     '<div class="shift-team-header" oncontextmenu="openTeamHeaderContextMenu(event, \'' + t.id + '\')">' +
                         '<div class="team-title-row">' +
@@ -2528,7 +2529,7 @@ function recordCharacterBattle(cand, dateKey, startMinutes) {
             renderHistoryUnassignedMembers();
         }
 
-        function renderHistoryInteractiveShiftArea(teams) {
+function renderHistoryInteractiveShiftArea(teams) {
             var dragEl = document.getElementById('history-shift-interactive-area');
             if (!dragEl) return;
             if (!teams || teams.length === 0) {
@@ -2543,6 +2544,7 @@ function recordCharacterBattle(cand, dateKey, startMinutes) {
                 var isDragon = t.boss.includes('龍王') || t.size === 12;
                 var wideCardClass = isDragon ? 'dragon-wide-card' : '';
 
+                // 💡 確保歷史整隊卡片有 draggable="true" 與完整的拖曳交換事件
                 html += '<div class="shift-team-card ' + boxClass + ' ' + wideCardClass + '" draggable="true" ondragstart="dragHistoryWholeTeam(event, ' + teamIdx + ')" ondragover="allowDrop(event)" ondrop="dropHistoryWholeTeamSwap(event, ' + teamIdx + ')">' +
                     '<div class="shift-team-header" oncontextmenu="openHistoryTeamHeaderContextMenu(event, \'' + t.id + '\')">' +
                         '<div class="team-title-row">' +
@@ -2978,6 +2980,7 @@ function recordCharacterBattle(cand, dateKey, startMinutes) {
             renderHistoryUnassignedMembers();
         }
 
+// 💡 修正：歷史 B 區整隊位置交換函式
         function dropHistoryWholeTeamSwap(ev, targetTeamIdx) {
             ev.preventDefault();
             ev.stopPropagation();
@@ -2986,6 +2989,8 @@ function recordCharacterBattle(cand, dateKey, startMinutes) {
                 historyInteractiveTeamsState[draggedHistWholeTeamIdx] = historyInteractiveTeamsState[targetTeamIdx];
                 historyInteractiveTeamsState[targetTeamIdx] = temp;
                 draggedHistWholeTeamIdx = null;
+                
+                // 重新渲染歷史 B 區介面
                 renderHistoryInteractiveShiftArea(historyInteractiveTeamsState);
             }
         }
@@ -3278,6 +3283,22 @@ function recordCharacterBattle(cand, dateKey, startMinutes) {
             renderUnassignedMembers();
             renderAreaAUnassignedText(unassignedCandidatesState);
         }
+// 💡 補上一般 B 區整隊位置交換函式
+function dropWholeTeamSwap(ev, targetTeamIdx) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    if (draggedWholeTeamIndex !== null && draggedWholeTeamIndex !== targetTeamIdx) {
+        // 交換隊伍陣列中兩隊的位置
+        var temp = interactiveTeamsState[draggedWholeTeamIndex];
+        interactiveTeamsState[draggedWholeTeamIndex] = interactiveTeamsState[targetTeamIdx];
+        interactiveTeamsState[targetTeamIdx] = temp;
+        draggedWholeTeamIndex = null;
+        
+        // 重新渲染 A 區與 B 區介面
+        renderAreaACards(interactiveTeamsState);
+        renderInteractiveShiftArea(interactiveTeamsState);
+    }
+}
 // 🤖 修正：補上 B 區角色卡片拖回未排班區的處理函式
 function dropToUnassigned(ev) {
     ev.preventDefault();
