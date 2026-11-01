@@ -979,35 +979,37 @@
             } catch(e) {}
         })();
 
-        async function fetchOnlineUsersList() {
-            try {
-                var res = null;
-                if (supabaseClient) {
-                    res = await supabaseClient.from('artale_members').select('id, characters, ranges');
+async function fetchOnlineUsersList() {
+    try {
+        var res = null;
+        if (supabaseClient) {
+            res = await supabaseClient.from('artale_members').select('id, characters, ranges');
+        }
+        var activeNames = [];
+        if (res && res.data) {
+            res.data.forEach(function(m) {
+                var hasTime = m.ranges && Array.isArray(m.ranges) && m.ranges.length > 0;
+                if (m.id && m.characters && Array.isArray(m.characters) && m.characters.length > 0 && m.characters[0].job && hasTime) {
+                    activeNames.push(m.id);
                 }
-                var activeNames = [];
-                if (res && res.data) {
-                    res.data.forEach(function(m) {
-                        var hasTime = m.ranges && Array.isArray(m.ranges) && m.ranges.length > 0;
-                        if (m.id && m.characters && Array.isArray(m.characters) && m.characters.length > 0 && m.characters[0].job && hasTime) {
-                            activeNames.push(m.id);
-                        }
-                    });
-                }
-                var el = document.getElementById('online-users-bar');
-                if (el) {
-                    var listSpan = document.getElementById('online-users-list');
-                    if (listSpan) {
-                        if (activeNames.length === 0) {
-                            listSpan.innerText = '目前尚無報名成功玩家';
-                        } else {
-                            listSpan.innerText = activeNames.join(', ');
-                        }
-                    }
-                }
-            } catch(e) {}
+            });
         }
 
+        var el = document.getElementById('online-users-list');
+        if (el) {
+            if (activeNames.length === 0) {
+                el.innerHTML = '<span style="color:#888;">目前尚無符合條件的報名玩家</span>';
+            } else {
+                // 💡 恢復無底色、純深綠字 (color: #047857) 的原本樣式
+                el.innerHTML = activeNames.map(function(name) {
+                    return '<span style="color:#047857; font-weight:bold; font-size:13px; margin-right:4px;">' + name + '</span>';
+                }).join(' ');
+            }
+        }
+    } catch (err) {
+        console.error('fetchOnlineUsersList error:', err);
+    }
+}
         function updateDynamicWeekTitle(tueDate, weekNum) {
             try {
                 var mStart = String(tueDate.getMonth() + 1).padStart(2, '0');
@@ -2340,7 +2342,7 @@ function recordCharacterBattle(cand, dateKey, startMinutes) {
 
                     if (!hasMetSomewhere) {
                         if (squadUserIds.has(cb.p1) || squadUserIds.has(cb.p2)) {
-                            warnings.push('⚠️ ' + cb.p1 + '與' + cb.p2 + '契約未對到(可手動拖曳)');
+                            warnings.push('⚠️ ' + cb.p1 + '與' + cb.p2 + '綁定契約破滅');
                         }
                     }
                 });
@@ -3711,13 +3713,13 @@ function dropToUnassigned(ev) {
             }
         }
 
-        async function renderSchedule() {
+async function renderSchedule() {
     var areaEl = document.getElementById('full-schedule-area');
     if (!areaEl || !supabaseClient) return;
     areaEl.innerHTML = '正在讀取本週成員總覽資料...';
 
     try {
-        // 💡 加上 .order('created_at', { ascending: false }) 或依據您的資料庫欄位調整，若無 created_at 則可對資料陣列進行排序
+        // 💡 修正：使用 .order('id', { ascending: false }) 或預設抓取，並確保最新的在最前面
         var res = await supabaseClient.from('artale_members').select('*');
         if (res.error || !res.data || res.data.length === 0) {
             areaEl.innerHTML = '<div style="text-align:center; color:#888; padding:20px;">目前尚無成員報名資料。</div>';
@@ -3729,8 +3731,7 @@ function dropToUnassigned(ev) {
 
         var rawMembers = res.data;
 
-        // 💡 如果您的資料表有時間欄位（例如 created_at 或 updated_at），可在此排序；若沒有，預設陣列後加入的即為最新報名
-        // 這裡將 rawMembers 反轉，讓陣列最後報名的（最新的）排在最前面
+        // 💡 確保 Supabase 回傳的陣列順序正確：將陣列反轉，讓最後寫入/更新（最新報名）的排在最上方
         rawMembers.reverse();
 
         var checkId = document.getElementById('quick-check-id').value;
@@ -3752,84 +3753,87 @@ function dropToUnassigned(ev) {
             }
         });
 
+        // 💡 關鍵修正：將所有拆解出來的角色陣列再次反轉，確保最後加入/最新更新的玩家角色百分之百排在每個日期的最上方
+        allCharEntries.reverse();
 
-                var v1CountMap = {};
-                var v13CountMap = {};
+        var v1CountMap = {};
+        var v13CountMap = {};
 
-                allCharEntries.forEach(function(c) {
-                    var v1 = (c.v1 || '').trim();
-                    if (v1 && v1 !== 'ALL') v1CountMap[v1] = (v1CountMap[v1] || 0) + 1;
+        allCharEntries.forEach(function(c) {
+            var v1 = (c.v1 || '').trim();
+            if (v1 && v1 !== 'ALL') v1CountMap[v1] = (v1CountMap[v1] || 0) + 1;
 
-                    var uniqueBossesInV13 = new Set();
-                    [c.v1, c.v2, c.v3].forEach(function(v) {
-                        var boss = (v || '').trim();
-                        if (boss && boss !== 'ALL') uniqueBossesInV13.add(boss);
-                    });
-                    uniqueBossesInV13.forEach(function(boss) {
-                        v13CountMap[boss] = (v13CountMap[boss] || 0) + 1;
-                    });
-                });
+            var uniqueBossesInV13 = new Set();
+            [c.v1, c.v2, c.v3].forEach(function(v) {
+                var boss = (v || '').trim();
+                if (boss && boss !== 'ALL') uniqueBossesInV13.add(boss);
+            });
+            uniqueBossesInV13.forEach(function(boss) {
+                v13CountMap[boss] = (v13CountMap[boss] || 0) + 1;
+            });
+        });
 
-                var topV1Boss = '無';
-                var topV1Count = 0;
-                Object.keys(v1CountMap).forEach(function(boss) {
-                    if (v1CountMap[boss] > topV1Count) { topV1Count = v1CountMap[boss]; topV1Boss = boss; }
-                });
+        var topV1Boss = '無';
+        var topV1Count = 0;
+        Object.keys(v1CountMap).forEach(function(boss) {
+            if (v1CountMap[boss] > topV1Count) { topV1Count = v1CountMap[boss]; topV1Boss = boss; }
+        });
 
-                var sortedV13Arr = Object.keys(v13CountMap).map(function(boss) {
-                    return { boss: boss, count: v13CountMap[boss] };
-                }).sort(function(a, b) { return b.count - a.count; });
+        var sortedV13Arr = Object.keys(v13CountMap).map(function(boss) {
+            return { boss: boss, count: v13CountMap[boss] };
+        }).sort(function(a, b) { return b.count - a.count; });
 
-                var rank1Text = sortedV13Arr.length > 0 ? sortedV13Arr[0].boss + ' (共 ' + sortedV13Arr[0].count + ' 角色有列入志願中)' : '尚無資料';
-                var rank2Text = sortedV13Arr.length > 1 ? sortedV13Arr[1].boss + ' (共 ' + sortedV13Arr[1].count + ' 角色有列入志願中)' : '尚無資料';
-                var v1TextDisplay = (topV1Count > 0) ? (topV1Boss + ' (共 ' + topV1Count + ' 角色排在志願1)') : '尚無資料';
+        var rank1Text = sortedV13Arr.length > 0 ? sortedV13Arr[0].boss + ' (共 ' + sortedV13Arr[0].count + ' 角色有列入志願中)' : '尚無資料';
+        var rank2Text = sortedV13Arr.length > 1 ? sortedV13Arr[1].boss + ' (共 ' + sortedV13Arr[1].count + ' 角色有列入志願中)' : '尚無資料';
+        var v1TextDisplay = (topV1Count > 0) ? (topV1Boss + ' (共 ' + topV1Count + ' 角色排在志願1)') : '尚無資料';
 
-                document.getElementById('stat-v1-text').innerText = '🔥 志願序第一的突襲：' + v1TextDisplay;
-                document.getElementById('stat-v13-top1-text').innerText = '🏆 志願數最多的突襲：' + rank1Text;
-                document.getElementById('stat-v13-top2-text').innerText = '🥈 志願數第二多的突襲：' + rank2Text;
+        document.getElementById('stat-v1-text').innerText = '🔥 志願序第一的突襲：' + v1TextDisplay;
+        document.getElementById('stat-v13-top1-text').innerText = '🏆 志願數最多的突襲：' + rank1Text;
+        document.getElementById('stat-v13-top2-text').innerText = '🥈 志願數第二多的突襲：' + rank2Text;
 
 
-                var html = '<div class="schedule-scroll-wrapper"><div class="schedule-grid-container">';
-                weekCycle.forEach(function(w) {
-                    var cycleKey = w.key;
-                    html += '<div class="schedule-day-column"><div class="schedule-day-header">' + w.label + '</div><div class="schedule-day-body">';
-                    
-                    allCharEntries.forEach(function(c) {
-                        var dayRanges = c.ranges.filter(function(r) { return isDateMatched(r.dateKey, cycleKey); });
-                        if (dayRanges.length > 0) {
-                            var bgClass = 'boss-' + (c.v1 || 'default');
-                            var jobColorClass = 'job-color-' + (c.job || '');
-                            var timeLinesHtml = dayRanges.map(function(r){ return '<div style="margin-top:1px;">⏰ ' + r.startStr + '~' + r.endStr + '</div>'; }).join('');
-                            var ticketText = (c.ticket || '') + (c.hasMW20 ? ' (🍁20)' : '');
+        var html = '<div class="schedule-scroll-wrapper"><div class="schedule-grid-container">';
+        weekCycle.forEach(function(w) {
+            var cycleKey = w.key;
+            html += '<div class="schedule-day-column"><div class="schedule-day-header">' + w.label + '</div><div class="schedule-day-body">';
+            
+            allCharEntries.forEach(function(c) {
+                var dayRanges = c.ranges.filter(function(r) { return isDateMatched(r.dateKey, cycleKey); });
+                if (dayRanges.length > 0) {
+                    var bgClass = 'boss-' + (c.v1 || 'default');
+                    var jobColorClass = 'job-color-' + (c.job || '');
+                    var timeLinesHtml = dayRanges.map(function(r){ return '<div style="margin-top:1px;">⏰ ' + r.startStr + '~' + r.endStr + '</div>'; }).join('');
+                    var ticketText = (c.ticket || '') + (c.hasMW20 ? ' (🍁20)' : '');
 
-                            var excTags = '';
-                            if (c.exc1) excTags += '<span class="boss-tag-exclude">❌' + c.exc1 + '</span>';
-                            if (c.exc2) excTags += '<span class="boss-tag-exclude">❌' + c.exc2 + '</span>';
+                    var excTags = '';
+                    if (c.exc1) excTags += '<span class="boss-tag-exclude">❌' + c.exc1 + '</span>';
+                    if (c.exc2) excTags += '<span class="boss-tag-exclude">❌' + c.exc2 + '</span>';
 
-                            html += '<div class="member-card ' + bgClass + '">' +
-                                '<div style="font-weight:bold; font-size:12px; overflow:hidden; text-overflow:ellipsis; max-width:85px;" class="' + jobColorClass + '">' + c.id + '</div>' +
-                                '<div style="font-size:11px; font-weight:bold;" class="' + jobColorClass + '">' + c.job + ' Lv.' + c.level + '</div>' +
-                                '<div style="font-size:9px; color:#4b5563;">' + c.style + '</div>' +
-                                '<div style="font-size:9px; color:#374151;">' + ticketText + '</div>' +
-                                '<div style="font-size:9px; color:#2563eb; font-weight:bold; margin-top:2px; line-height:1.2;">' + timeLinesHtml + '</div>' +
-                                '<div style="position:absolute; top:4px; right:3px; display:flex; flex-direction:column; gap:1px; align-items:flex-end;">' +
-                                    '<span class="boss-tag-v1 boss-' + c.v1 + '">1:' + c.v1 + '</span>' +
-                                    (c.v2 ? '<span class="boss-tag-v23 boss-' + c.v2 + '">2:' + c.v2 + '</span>' : '') +
-                                    (c.v3 ? '<span class="boss-tag-v3 boss-' + c.v3 + '">3:' + c.v3 + '</span>' : '') +
-                                    excTags +
-                                '</div>' +
-                            '</div>';
-                        }
-                    });
-                    html += '</div></div>';
-                });
-                html += '</div></div>';
-                areaEl.innerHTML = html;
+                    html += '<div class="member-card ' + bgClass + '">' +
+                        '<div style="font-weight:bold; font-size:12px; overflow:hidden; text-overflow:ellipsis; max-width:85px;" class="' + jobColorClass + '">' + c.id + '</div>' +
+                        '<div style="font-size:11px; font-weight:bold;" class="' + jobColorClass + '">' + c.job + ' Lv.' + c.level + '</div>' +
+                        '<div style="font-size:9px; color:#4b5563;">' + c.style + '</div>' +
+                        '<div style="font-size:9px; color:#374151;">' + ticketText + '</div>' +
+                        '<div style="font-size:9px; color:#2563eb; font-weight:bold; margin-top:2px; line-height:1.2;">' + timeLinesHtml + '</div>' +
+                        '<div style="position:absolute; top:4px; right:3px; display:flex; flex-direction:column; gap:1px; align-items:flex-end;">' +
+                            '<span class="boss-tag-v1 boss-' + c.v1 + '">1:' + c.v1 + '</span>' +
+                            (c.v2 ? '<span class="boss-tag-v23 boss-' + c.v2 + '">2:' + c.v2 + '</span>' : '') +
+                            (c.v3 ? '<span class="boss-tag-v3 boss-' + c.v3 + '">3:' + c.v3 + '</span>' : '') +
+                            excTags +
+                        '</div>' +
+                    '</div>';
+                }
+            });
+            html += '</div></div>';
+        });
+        html += '</div></div>';
+        areaEl.innerHTML = html;
 
-            } catch (err) {
-                areaEl.innerHTML = '<div style="color:red; text-align:center;">讀取總覽資料發生錯誤：' + err.message + '</div>';
-            }
-        }
+    } catch (err) {
+        areaEl.innerHTML = '<div style="color:red; text-align:center;">讀取總覽資料發生錯誤：' + err.message + '</div>';
+    }
+}
+
 async function adminBackupCurrentWeekHistory() {
             if (!supabaseClient) { alert('雲端尚未連線'); return; }
             if (!confirm('確定要將當前全體成員的報名資料封存並寫入第 ' + dynamicCurrentWeekNum + ' 週歷史紀錄嗎？')) return;
@@ -3995,6 +3999,7 @@ function executeLoadData(mode, slotNum) {
     }
 }
 // 🚨 一般排班系統 B 區即時衝突檢核與警示提示功能修復
+// 🚨 修正後：包含志願、同隊重複ID、同時段衝突、以及「出戰時間不吻合檢查」的完整即時驗證
 function checkAndRenderBValidationErrors() {
     var validationBox = document.getElementById('shift-b-validation-box');
     var validationList = document.getElementById('shift-b-validation-list');
@@ -4002,10 +4007,24 @@ function checkAndRenderBValidationErrors() {
 
     var errorMessages = [];
 
-    // 1. 檢查各隊伍內部的志願與「同隊重複玩家 ID」狀況
+    // 1. 檢查各隊伍內部的志願、重複ID與「出戰時間是否吻合」狀況
     interactiveTeamsState.forEach(function(t) {
         var teamBoss = t.boss.replace(/連七|4場|\s+/g, '').trim();
         var userCountInTeam = {};
+        
+        // 嘗試從隊伍中取得日期 (例如從 t.dateKey 或 t.fullTimeStr 解析出 MM/DD)
+        var teamDateKey = t.dateKey || '';
+        if (!teamDateKey && t.fullTimeStr) {
+            var dateMatch = t.fullTimeStr.match(/(\d{1,2}\/\d{1,2})/);
+            if (dateMatch) teamDateKey = dateMatch[1];
+        }
+
+        // 嘗試從 fullTimeStr 解析開打時間 (例如 20:00)
+        var teamStartM = 1200; // 預設 20:00
+        if (t.fullTimeStr) {
+            var timeMatch = t.fullTimeStr.match(/(\d{1,2}:\d{2})/);
+            if (timeMatch) teamStartM = timeStrToMinutes(timeMatch[1]);
+        }
 
         t.members.forEach(function(m) {
             if (m.isEmptySlot || !m.userId || m.userId === '新成員' || m.job === '自訂') return;
@@ -4013,6 +4032,21 @@ function checkAndRenderBValidationErrors() {
             // 檢查志願是否吻合
             if (!hasUserWishedBoss(m, teamBoss)) {
                 errorMessages.push('⚠️ ' + m.userId + '角色(' + m.job + ') 志願不吻合 [' + teamBoss + ']');
+            }
+
+            // 💡 檢查玩家是否在該日期有填寫可出戰時間，且時間區段涵蓋該場次
+            if (teamDateKey && m.ranges && Array.isArray(m.ranges) && m.ranges.length > 0) {
+                var hasMatchedRange = m.ranges.some(function(r) {
+                    if (!isDateMatched(r.dateKey, teamDateKey)) return false;
+                    var uStart = timeStrToMinutes(r.startStr);
+                    var uEnd = (r.endStr === '00:00' || r.endStr === '23:59') ? 1439 : timeStrToMinutes(r.endStr);
+                    return (teamStartM >= uStart && teamStartM <= uEnd);
+                });
+                if (!hasMatchedRange) {
+                    errorMessages.push('⚠️ ' + m.userId + '角色(' + m.job + ') 在 ' + teamDateKey + ' 出戰時間不吻合');
+                }
+            } else if (teamDateKey) {
+                errorMessages.push('⚠️ ' + m.userId + '角色(' + m.job + ') 該日無任何可出戰時間記錄');
             }
 
             // 統計同隊中的玩家 ID 次數
@@ -4067,7 +4101,8 @@ function checkAndRenderBValidationErrors() {
         validationList.innerHTML = '';
     }
 }
-// 📜 歷史 B 區即時衝突檢核與警示提示（完整版：含志願、同隊重複ID、同時段衝突）
+
+// 📜 歷史 B 區即時衝突檢核與警示提示（完整版：含志願、同隊重複ID、同時段衝突、時間吻合檢查）
 function checkAndRenderHistoryBValidationErrors() {
     var validationBox = document.getElementById('history-shift-b-validation-box');
     var validationList = document.getElementById('history-shift-b-validation-list');
@@ -4075,10 +4110,24 @@ function checkAndRenderHistoryBValidationErrors() {
 
     var errorMessages = [];
 
-    // 1. 檢查各歷史隊伍內部的志願與「同隊重複玩家 ID」狀況
+    // 1. 檢查各歷史隊伍內部的志願、重複ID與「出戰時間是否吻合」狀況
     historyInteractiveTeamsState.forEach(function(t) {
         var teamBoss = t.boss.replace(/連七|4場|\s+/g, '').trim();
         var userCountInTeam = {};
+
+        // 嘗試從隊伍中取得日期 (例如從 t.dateKey 或 t.fullTimeStr 解析出 MM/DD)
+        var teamDateKey = t.dateKey || '';
+        if (!teamDateKey && t.fullTimeStr) {
+            var dateMatch = t.fullTimeStr.match(/(\d{1,2}\/\d{1,2})/);
+            if (dateMatch) teamDateKey = dateMatch[1];
+        }
+
+        // 嘗試從 fullTimeStr 解析開打時間 (例如 20:00)
+        var teamStartM = 1200; // 預設 20:00
+        if (t.fullTimeStr) {
+            var timeMatch = t.fullTimeStr.match(/(\d{1,2}:\d{2})/);
+            if (timeMatch) teamStartM = timeStrToMinutes(timeMatch[1]);
+        }
 
         t.members.forEach(function(m) {
             if (m.isEmptySlot || !m.userId || m.userId === '新成員' || m.job === '自訂') return;
@@ -4086,6 +4135,21 @@ function checkAndRenderHistoryBValidationErrors() {
             // 檢查志願是否吻合
             if (!hasUserWishedBoss(m, teamBoss)) {
                 errorMessages.push('⚠️ ' + m.userId + '角色(' + m.job + ') 志願不吻合 [' + teamBoss + ']');
+            }
+
+            // 💡 檢查玩家在該歷史日期是否有填寫可出戰時間，且時間區段涵蓋該場次
+            if (teamDateKey && m.ranges && Array.isArray(m.ranges) && m.ranges.length > 0) {
+                var hasMatchedRange = m.ranges.some(function(r) {
+                    if (!isDateMatched(r.dateKey, teamDateKey)) return false;
+                    var uStart = timeStrToMinutes(r.startStr);
+                    var uEnd = (r.endStr === '00:00' || r.endStr === '23:59') ? 1439 : timeStrToMinutes(r.endStr);
+                    return (teamStartM >= uStart && teamStartM <= uEnd);
+                });
+                if (!hasMatchedRange) {
+                    errorMessages.push('⚠️ ' + m.userId + '角色(' + m.job + ') 在 ' + teamDateKey + ' 出戰時間不吻合');
+                }
+            } else if (teamDateKey) {
+                errorMessages.push('⚠️ ' + m.userId + '角色(' + m.job + ') 該歷史日期無任何可出戰時間記錄');
             }
 
             // 統計同隊中的玩家 ID 次數
@@ -4101,7 +4165,7 @@ function checkAndRenderHistoryBValidationErrors() {
     });
 
     // 2. 檢查跨歷史隊伍的「同時段出戰衝突」
-    var userTimeSlotsMap = {}; // { "時間_玩家ID": [隊伍名稱1, 隊伍名稱2] }
+    var userTimeSlotsMap = {}; 
 
     historyInteractiveTeamsState.forEach(function(t) {
         var timeKey = t.fullTimeStr.trim();
@@ -4140,11 +4204,7 @@ function checkAndRenderHistoryBValidationErrors() {
         validationList.innerHTML = '';
     }
 }
-function initHistoryBlankShiftArea() {
-    historyInteractiveTeamsState = [];
-    renderHistoryInteractiveShiftArea(historyInteractiveTeamsState);
-    renderHistoryUnassignedMembers();
-}
+
     </script>
 </body>
 </html>
