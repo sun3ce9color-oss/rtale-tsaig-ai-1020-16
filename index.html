@@ -302,19 +302,23 @@
 <body>
     <div class="container">
         <header>
-            <div class="online-users-bar" id="online-users-bar">
-                <span>🟢 本週突襲報名成功玩家：</span>
-                <span id="online-users-list">載入中...</span>
-            </div>
-            <h1>Artale 🐣TsaiG Boss突襲時間🐣-網站版</h1>
-            <div class="cycle-title" id="cycle-title">動態計算中...</div>
-            
-            <div class="deadline-countdown-bar" id="deadline-bar">
-                <span id="deadline-label-prefix">⏳ 本週報名截止時間：<span id="deadline-date-text">計算中...</span></span>
-                <span>｜ <span id="countdown-status-text">剩餘</span> <span class="countdown-time" id="countdown-timer">計算中...</span></span>
-            </div>
-        </header>
-
+    <div class="online-users-bar" id="online-users-bar" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+        <div>
+            <span>🟢 本週突襲報名成功玩家：</span>
+            <span id="online-users-list">載入中...</span>
+        </div>
+        <div style="color: #6b7280; border-top: 1px dashed #e5e7eb; width: 100%; padding-top: 3px;">
+            <span>⚪ 本週尚未報名玩家：</span>
+            <span id="offline-users-list">載入中...</span>
+        </div>
+    </div>
+    <h1>Artale 🐣TsaiG Boss突襲時間🐣-網站版</h1>
+    <div class="cycle-title" id="cycle-title">動態計算中...</div>
+    <div class="deadline-countdown-bar">
+        <span>⏰ <span id="deadline-label-prefix">本週報名截止時間：<b id="deadline-date-text">--/-- 00:05</b> | </span><span id="countdown-status-text">剩餘</span></span>
+        <span class="countdown-time" id="countdown-timer">計算中...</span>
+    </div>
+</header>
         <div class="nav-btns">
             <button type="button" id="nav-btn-member" onclick="switchTab('member')" class="btn btn-tab-member active">✍️ 團員報名/修改</button>
             <button type="button" id="nav-btn-schedule" onclick="switchTab('schedule')" class="btn btn-tab-schedule">📅 突襲排程總表</button>
@@ -716,13 +720,13 @@
                     <span style="font-weight: bold; color: #15803d;">✅ 已登入管理權限</span>
                     <button type="button" onclick="handleAdminLogout()" class="btn btn-gray" style="font-size: 12px; padding: 4px 8px;">登出</button>
                 </div>
-                <div style="background: #faf5ff; border: 1px solid #d8b4fe; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
-                    <h4 style="margin:0 0 6px 0; color:#7e22ce; font-size:14px;">🔍 上帝視角：以管理員身份修改任何成員資料</h4>
-                    <div style="display:flex; gap:8px;">
-                        <input type="text" id="admin-target-user-id" maxlength="7" placeholder="輸入要修改的玩家 ID暱稱" style="font-size:12px;">
-                        <button type="button" onclick="adminLoadAnyUserMemberData()" class="btn btn-purple" style="font-size:12px; padding:6px 12px; width:auto;">載入該員資料修改</button>
-                    </div>
+              <div style="background: #faf5ff; border: 1px solid #d8b4fe; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
+                <h4 style="margin:0 0 6px 0; color:#7e22ce; font-size:14px;">🔍 上帝視角：以管理員身份修改任何成員資料</h4>
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <input type="text" id="admin-target-user-id" maxlength="7" placeholder="輸入要修改的玩家 ID暱稱" style="font-size: 12px; flex: 1; min-width: 140px;">
+                <button type="button" onclick="adminLoadAnyUserMemberData()" class="btn btn-purple" style="font-size: 12px; padding: 6px 12px; width: auto; white-space: nowrap;">載入該員資料修改</button>
                 </div>
+              </div>
                 <h4 style="margin-bottom: 8px;">📋 當前全體已報名成員清單 (雲端)：</h4>
                 <div id="admin-member-list"></div>
             </div>
@@ -842,28 +846,64 @@
             function updateCountdown() {
                 try {
                     var now = new Date();
-                    var baseDeadline = new Date(2026, 10, 2, 0, 5, 0);
+                    // 基準點：設定為某個週六的 23:59:00（例如 2026/11/07 週六）
+                    var baseDeadline = new Date(2026, 10, 7, 23, 59, 0); 
                     var cycleMs = 7 * 24 * 60 * 60 * 1000;
                     
                     var targetDeadline = new Date(baseDeadline.getTime());
-                    while (now.getTime() >= targetDeadline.getTime() + (36 * 60 * 60 * 1000)) { 
+                    
+                    // 💡 修正判定邏輯：只要當前時間已經超過了「該週的週二早上 08:00」，
+                    // 就應該把截止日推到下一個週六，這樣週一/週二就能正確判斷為「等待下次開放」或「新一輪」
+                    while (true) {
+                        var nextOpenCheck = new Date(targetDeadline.getTime());
+                        nextOpenCheck.setDate(nextOpenCheck.getDate() + 3); // 週六過 3 天 = 週二
+                        nextOpenCheck.setHours(8, 0, 0, 0); // 週二 08:00
+
+                        // 如果現在時間小於這個週二的 08:00，代表我們正處於「上個週六結算後 ~ 本週二早上 08:00」的等待期！
+                        if (now < nextOpenCheck) {
+                            // 往回推一週作為當前的截止日
+                            var prevDeadline = new Date(targetDeadline.getTime() - cycleMs);
+                            // 但如果連上個週二都還沒到，就再退
+                            if (now >= new Date(prevDeadline.getTime() + 3*24*3600*1000 + 8*3600*1000)) {
+                                break;
+                            }
+                            targetDeadline = prevDeadline;
+                        }
+
+                        if (now < targetDeadline) {
+                            break;
+                        }
+                        
+                        // 檢查下一個週期
+                        var futureOpen = new Date(targetDeadline.getTime());
+                        futureOpen.setDate(futureOpen.getDate() + 3);
+                        futureOpen.setHours(8, 0, 0, 0);
+                        
+                        if (now < futureOpen) {
+                            break;
+                        }
+                        
                         targetDeadline.setTime(targetDeadline.getTime() + cycleMs);
                     }
 
-                    var nextOpenTime = new Date(targetDeadline.getTime());
-                    nextOpenTime.setDate(nextOpenTime.getDate() + 1); 
-                    nextOpenTime.setHours(12, 5, 0, 0); 
-
-                    var mOpen = String(nextOpenTime.getMonth() + 1).padStart(2, '0');
-                    var dOpen = String(nextOpenTime.getDate()).padStart(2, '0');
-                    currentNextOpenTimeStr = mOpen + '/' + dOpen + '(週二)12:05';
-
+                    // 本週結算截止時間（週六 23:59）
                     var mDl = String(targetDeadline.getMonth() + 1).padStart(2, '0');
                     var dDl = String(targetDeadline.getDate()).padStart(2, '0');
                     var dlDateEl = document.getElementById('deadline-date-text');
-                    if (dlDateEl) dlDateEl.innerText = mDl + '/' + dDl + '(週一) 00:05';
+                    if (dlDateEl) dlDateEl.innerText = mDl + '/' + dDl + '(週六) 23:59';
+
+                    // 下次開放報名時間：當週週六的 3 天後 = 週二早上 08:00
+                    var nextOpenTime = new Date(targetDeadline.getTime());
+                    nextOpenTime.setDate(nextOpenTime.getDate() + 3); 
+                    nextOpenTime.setHours(8, 0, 0, 0); 
+
+                    var mOpen = String(nextOpenTime.getMonth() + 1).padStart(2, '0');
+                    var dOpen = String(nextOpenTime.getDate()).padStart(2, '0');
+                    currentNextOpenTimeStr = mOpen + '/' + dOpen + '(週二)08:00';
 
                     var timerEl = document.getElementById('countdown-timer');
+                    
+                    // 判斷當前是否開放報名
                     if (now < targetDeadline) {
                         isRegistrationOpen = true;
                         var dlPrefix = document.getElementById('deadline-label-prefix');
@@ -880,23 +920,27 @@
 
                         if (timerEl) timerEl.innerText = days + '天 ' + hours + '時 ' + minutes + '分 ' + seconds + '秒';
                     } else if (now >= targetDeadline && now < nextOpenTime) {
+                        // 💡 結算後 ~ 週二 08:00 之間：顯示等待下次開放報名
                         isRegistrationOpen = false;
                         var dlPrefix = document.getElementById('deadline-label-prefix');
                         var statusText = document.getElementById('countdown-status-text');
                         if (dlPrefix) dlPrefix.style.display = 'none';
                         if (statusText) statusText.innerText = '倒數下次開放報名時間:' + currentNextOpenTimeStr + ' 剩餘';
                         
-                        var diffMs = nextOpenTime.getTime() - now.getTime();
+                       var diffMs = nextOpenTime.getTime() - now.getTime();
                         var totalSeconds = Math.floor(diffMs / 1000);
                         var days = Math.floor(totalSeconds / (3600 * 24));
                         var hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
-                        var minutes = Math.floor((totalSeconds % 3600) / 60);
-                        var seconds = totalSeconds % 60;
+                        var minutes = Math.floor((totalSeconds % 3600) / 60); // 確保是正確的 0~59 分
+                        var seconds = totalSeconds % 60;                   // 確保是正確的 0~59 秒
 
                         if (timerEl) timerEl.innerText = days + '天 ' + hours + '時 ' + minutes + '分 ' + seconds + '秒';
+                    } else {
+                        // 超過週二 08:00，自動進入新一輪的報名週期
+                        targetDeadline.setTime(targetDeadline.getTime() + cycleMs);
                     }
 
-                    checkAndExecuteAutoArchiving(now, nextOpenTime);
+                    checkAndExecuteAutoArchiving(now, targetDeadline);
                 } catch(e) {}
             }
 
@@ -904,26 +948,34 @@
             setInterval(updateCountdown, 1000);
         }
 
-        async function checkAndExecuteAutoArchiving(now, nextOpenTime) {
-            if (!supabaseClient) return;
-            try {
-                var weekNum = dynamicCurrentWeekNum; 
-                var archiveKey = 'archived_week_' + weekNum;
-                var lastArchived = localStorage.getItem(archiveKey);
-
-                if (!lastArchived && now >= nextOpenTime) {
-                    var res = await supabaseClient.from('artale_members').select('*');
-                    if (res.data && res.data.length > 0) {
-                        await supabaseClient.from('artale_history').upsert({
-                            week_num: weekNum,
-                            cycle_title: document.getElementById('cycle-title').innerText,
-                            members_data: res.data
-                        });
-                    }
-                    localStorage.setItem(archiveKey, 'true');
+async function checkAndExecuteAutoArchiving(now, targetDeadline) {
+    if (!supabaseClient) return;
+    try {
+        // 判定：只要當前時間大於等於「週六 23:59 截止時間」
+        if (now >= targetDeadline) {
+            var weekNum = dynamicCurrentWeekNum;
+            
+            // 1. 先向雲端歷史資料庫查詢：這一週是否已經封存過了？
+            var checkRes = await supabaseClient.from('artale_history').select('week_num').eq('week_num', weekNum).maybeSingle();
+            
+            // 2. 若雲端尚未有這一週的封存紀錄，才執行自動封存
+            if (!checkRes || !checkRes.data) {
+                var res = await supabaseClient.from('artale_members').select('*');
+                if (res && res.data && res.data.length > 0) {
+                    var cycleTitleStr = document.getElementById('cycle-title').innerText.replace('動態計算中...', '').trim();
+                    await supabaseClient.from('artale_history').upsert({
+                        week_num: weekNum,
+                        cycle_title: cycleTitleStr || ('第' + weekNum + '週'),
+                        members_data: res.data
+                    }, { onConflict: 'week_num' });
+                    console.log('✅ 系統已自動將第 ' + weekNum + ' 週資料封存至歷史紀錄！');
                 }
-            } catch(e) {}
+            }
         }
+    } catch(e) {
+        console.error('Auto archiving error:', e);
+    }
+}        
 
         function updateTimeDateDropdown() {
             var timeDateSelect = document.getElementById('time-date');
@@ -978,7 +1030,6 @@
                 setInterval(fetchOnlineUsersList, 10000);
             } catch(e) {}
         })();
-
 async function fetchOnlineUsersList() {
     try {
         var res = null;
@@ -986,23 +1037,48 @@ async function fetchOnlineUsersList() {
             res = await supabaseClient.from('artale_members').select('id, characters, ranges');
         }
         var activeNames = [];
+        var inactiveNames = [];
+
         if (res && res.data) {
             res.data.forEach(function(m) {
                 var hasTime = m.ranges && Array.isArray(m.ranges) && m.ranges.length > 0;
-                if (m.id && m.characters && Array.isArray(m.characters) && m.characters.length > 0 && m.characters[0].job && hasTime) {
-                    activeNames.push(m.id);
+                
+                // 💡 判斷是否有設定正式職業（排除空值或「自訂」）
+                var hasValidChar = m.characters && Array.isArray(m.characters) && m.characters.length > 0 && 
+                                   m.characters[0].job && m.characters[0].job !== '自訂';
+                
+                // 只有「有設定正式職業」的玩家才會被處理與顯示
+                if (m.id && hasValidChar) {
+                    if (hasTime) {
+                        activeNames.push(m.id); // 已報名成功
+                    } else {
+                        inactiveNames.push(m.id); // 已建帳號與職業，但本週未填時間
+                    }
                 }
+                // 未設定職業的玩家會直接被過濾忽略，不顯示在任何名單中
             });
         }
 
-        var el = document.getElementById('online-users-list');
-        if (el) {
+        // 1. 渲染本週報名成功玩家
+        var activeEl = document.getElementById('online-users-list');
+        if (activeEl) {
             if (activeNames.length === 0) {
-                el.innerHTML = '<span style="color:#888;">目前尚無符合條件的報名玩家</span>';
+                activeEl.innerHTML = '<span style="color:#888;">目前尚無符合條件的報名玩家</span>';
             } else {
-                // 💡 恢復無底色、純深綠字 (color: #047857) 的原本樣式
-                el.innerHTML = activeNames.map(function(name) {
-                    return '<span style="color:#047857; font-weight:bold; font-size:13px; margin-right:4px;">' + name + '</span>';
+                activeEl.innerHTML = activeNames.map(function(name) {
+                    return '<span style="color:#047857; font-weight:bold; font-size:11px; margin-right:4px;">' + name + '</span>';
+                }).join(' ');
+            }
+        }
+
+        // 2. 渲染本週尚未報名玩家 (僅顯示有職業但沒填時間者)
+        var inactiveEl = document.getElementById('offline-users-list');
+        if (inactiveEl) {
+            if (inactiveNames.length === 0) {
+                inactiveEl.innerHTML = '<span style="color:#888;">無</span>';
+            } else {
+                inactiveEl.innerHTML = inactiveNames.map(function(name) {
+                    return '<span style="color:#4b5563; font-weight:bold; font-size:11px; margin-right:4px;">' + name + '</span>';
                 }).join(' ');
             }
         }
@@ -1010,6 +1086,7 @@ async function fetchOnlineUsersList() {
         console.error('fetchOnlineUsersList error:', err);
     }
 }
+
         function updateDynamicWeekTitle(tueDate, weekNum) {
             try {
                 var mStart = String(tueDate.getMonth() + 1).padStart(2, '0');
