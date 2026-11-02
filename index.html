@@ -715,6 +715,9 @@
             <div style="background: #fdf2f8; border: 1px solid #f472b6; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
                     <h4 style="margin:0 0 6px 0; color:#be185d; font-size:14px;">📦 歷史紀錄手動管理</h4>
                     <button type="button" onclick="adminBackupCurrentWeekHistory()" class="btn" style="background:#ec4899; color:white; font-size:12px; padding:8px 14px; width:auto;">📦 一鍵封存本週報名資料至歷史紀錄</button>
+<button onclick="adminResetCurrentWeekBookings()" style="background-color: #ec4899; color: white; padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+    📦 重置本週報名時間（保留角色與契約資料）
+</button>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <span style="font-weight: bold; color: #15803d;">✅ 已登入管理權限</span>
@@ -4309,6 +4312,37 @@ function checkAndRenderHistoryBValidationErrors() {
         validationList.innerHTML = '';
     }
 }
+// 放在 <script> 標籤內的任何地方（建議放在 adminBackupCurrentWeekHistory 附近）
+        async function adminResetCurrentWeekBookings() {
+            if (!supabaseClient) { alert('雲端尚未連線'); return; }
+            if (!confirm('⚠️ 確定要重置所有成員本週填寫的「報名時間」嗎？\n\n此操作會讓「📅 突襲排程總表」清空時間，但會完整保留所有成員的角色、等級、契約等基本設定。')) return;
+
+            try {
+                var res = await supabaseClient.from('artale_members').select('*');
+                if (res.error || !res.data || res.data.length === 0) {
+                    alert('目前資料庫中尚無成員資料可供重置。');
+                    return;
+                }
+
+                var updatedMembers = res.data.map(function(m) {
+                    return {
+                        ...m,
+                        ranges: [] // 僅清空可報名的時間區段
+                    };
+                });
+
+                var updateRes = await supabaseClient.from('artale_members').upsert(updatedMembers);
+                
+                if (updateRes.error) {
+                    alert('❌ 重置失敗：' + updateRes.error.message);
+                } else {
+                    alert('✅ 重置成功！所有成員的報名時間已清空，角色與契約資料皆已妥善保留。');
+                    if (typeof renderSchedule === 'function') renderSchedule();
+                }
+            } catch (err) {
+                alert('❌ 執行發生錯誤：' + err.message);
+            }
+        }
 
     </script>
 </body>
