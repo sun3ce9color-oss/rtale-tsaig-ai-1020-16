@@ -3689,15 +3689,22 @@ function dropToUnassigned(ev) {
                     return;
                 }
 
-                var historyWeekCycle = [
-                    { key: '10/27', label: '週二 (10/27)' },
-                    { key: '10/28', label: '週三 (10/28)' },
-                    { key: '10/29', label: '週四 (10/29)' },
-                    { key: '10/30', label: '週五 (10/30)' },
-                    { key: '10/31', label: '週六 (10/31)' },
-                    { key: '11/01', label: '週日 (11/01)' },
-                    { key: '11/02', label: '週一 (11/02)' }
-                ];
+                // 💡 動態根據歷史週次（weekNum）算出的 7 天日期
+                var historyWeekCycle = [];
+                var dayNames = ['週二', '週三', '週四', '週五', '週六', '週日', '週一'];
+                var baseTue = new Date(2026, 10, 3); // 第 66 週基準點：2026/11/03
+                var weekDiff = weekNum - 66; 
+                var startTue = new Date(baseTue.getTime() + weekDiff * 7 * 24 * 60 * 60 * 1000);
+
+                for (var i = 0; i < 7; i++) {
+                    var d = new Date(startTue.getTime() + i * 24 * 60 * 60 * 1000);
+                    var mStr = String(d.getMonth() + 1).padStart(2, '0');
+                    var dStr = String(d.getDate()).padStart(2, '0');
+                    historyWeekCycle.push({
+                        key: mStr + '/' + dStr,
+                        label: dayNames[i] + ' (' + mStr + '/' + dStr + ')'
+                    });
+                }
                 currentHistoryWeekCycleDates = historyWeekCycle;
 
                 var allCharEntries = [];
