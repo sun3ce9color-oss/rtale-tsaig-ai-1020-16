@@ -301,15 +301,19 @@
 </head>
 <body>
     <div class="container">
-        <header>
-    <div class="online-users-bar" id="online-users-bar" style="flex-direction: column; align-items: flex-start; gap: 4px;">
-        <div>
+<header>
+    <div class="online-users-bar" id="online-users-bar" style="flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; width: 100%;">
+        <div style="width: 100%; text-align: left;">
             <span>🟢 本週突襲報名成功玩家：</span>
             <span id="online-users-list">載入中...</span>
         </div>
-        <div style="color: #6b7280; border-top: 1px dashed #e5e7eb; width: 100%; padding-top: 3px;">
+        <div style="color: #6b7280; border-top: 1px dashed #e5e7eb; width: 100%; padding-top: 3px; text-align: left;">
             <span>⚪ 曾報名但本週尚未報名：</span>
             <span id="offline-users-list">載入中...</span>
+        </div>
+        <div style="color: #1e3a8a; border-top: 1px dashed #e5e7eb; width: 100%; padding-top: 3px; text-align: left;">
+            <span>🐲 本週龍王志願玩家：</span>
+            <span id="dragon-wished-users-list">載入中...</span>
         </div>
     </div>
     <h1>Artale 🐣TsaiG Boss突襲時間🐣-網站版</h1>
@@ -1016,65 +1020,104 @@ async function checkAndExecuteAutoArchiving(now, targetDeadline) {
         })();
 
 async function fetchOnlineUsersList() {
-            try {
-                var res = null;
-                if (supabaseClient) {
-                    res = await supabaseClient.from('artale_members').select('id, characters, ranges');
-                }
-                var activeNames = [];
-                var inactiveNames = [];
+    try {
+        var res = null;
+        if (supabaseClient) {
+            res = await supabaseClient.from('artale_members').select('id, characters, ranges');
+        }
+        var activeNames = [];
+        var inactiveNames = [];
+        var dragonWishedList = []; // 💡 儲存龍王志願玩家與職業
 
-                if (res && res.data) {
-                    res.data.forEach(function(m) {
-                        var hasTime = m.ranges && Array.isArray(m.ranges) && m.ranges.length > 0;
-                        
-                        // 判斷是否有設定正式職業（排除空值或「自訂」）
-                        var hasValidChar = m.characters && Array.isArray(m.characters) && m.characters.length > 0 && 
-                                           m.characters[0].job && m.characters[0].job !== '自訂';
-                        
-                        if (m.id && hasValidChar) {
-                            if (hasTime) {
-                                activeNames.push(m.id); // 已報名成功（放入綠燈區）
-                            } else {
-                                inactiveNames.push(m.id); // 有帳號但沒填時間（放入灰燈區）
+        if (res && res.data) {
+            res.data.forEach(function(m) {
+                var hasTime = m.ranges && Array.isArray(m.ranges) && m.ranges.length > 0;
+                
+                // 判斷是否有設定正式職業（排除空值或「自訂」）
+                var hasValidChar = m.characters && Array.isArray(m.characters) && m.characters.length > 0 && 
+                                   m.characters[0].job && m.characters[0].job !== '自訂';
+                
+                if (m.id && hasValidChar) {
+                    if (hasTime) {
+                        activeNames.push(m.id); // 已報名成功（綠燈區）
+
+                        // 🐲 檢查此玩家底下是否有角色將「龍王」或「ALL」放入志願 1, 2, 3
+                        var dragonJobs = [];
+                        m.characters.forEach(function(c) {
+                            if (!c || !c.job || c.job === '自訂') return;
+                            var v1 = (c.v1 || '').trim();
+                            var v2 = (c.v2 || '').trim();
+                            var v3 = (c.v3 || '').trim();
+
+                            var isDragonWished = (v1 === '龍王' || v2 === '龍王' || v3 === '龍王' || 
+                                                  v1 === 'ALL' || v2 === 'ALL' || v3 === 'ALL');
+
+                            if (isDragonWished) {
+                                dragonJobs.push(c.job);
                             }
+                        });
+
+                        if (dragonJobs.length > 0) {
+                            dragonWishedList.push({
+                                userId: m.id,
+                                jobsText: dragonJobs.join('/') // 多角色出戰時顯示為「職業1/職業2」
+                            });
                         }
-                    });
-                }
 
-                // 💡 關鍵修正：透過 Set 過濾，確保「已在上方綠燈區的玩家」，絕對不會同時出現在下方灰燈區
-                var activeSet = new Set(activeNames);
-                var filteredInactiveNames = inactiveNames.filter(function(name) {
-                    return !activeSet.has(name);
-                });
-
-                // 1. 渲染本週報名成功玩家
-                var activeEl = document.getElementById('online-users-list');
-                if (activeEl) {
-                    if (activeNames.length === 0) {
-                        activeEl.innerHTML = '<span style="color:#888;">目前尚無符合條件的報名玩家</span>';
                     } else {
-                        activeEl.innerHTML = activeNames.map(function(name) {
-                            return '<span style="color:#047857; font-weight:bold; font-size:11px; margin-right:4px;">' + name + '</span>';
-                        }).join(' ');
+                        inactiveNames.push(m.id); // 有帳號但沒填時間（灰燈區）
                     }
                 }
+            });
+        }
 
-                // 2. 渲染本週尚未報名玩家 (已排除上方綠燈區的人)
-                var inactiveEl = document.getElementById('offline-users-list');
-                if (inactiveEl) {
-                    if (filteredInactiveNames.length === 0) {
-                        inactiveEl.innerHTML = '<span style="color:#888;">無</span>';
-                    } else {
-                        inactiveEl.innerHTML = filteredInactiveNames.map(function(name) {
-                            return '<span style="color:#4b5563; font-weight:bold; font-size:11px; margin-right:4px;">' + name + '</span>';
-                        }).join(' ');
-                    }
-                }
-            } catch (err) {
-                console.error('fetchOnlineUsersList error:', err);
+        // Set 雙重過濾，確保綠燈區與灰燈區不重複
+        var activeSet = new Set(activeNames);
+        var filteredInactiveNames = inactiveNames.filter(function(name) {
+            return !activeSet.has(name);
+        });
+
+        // 1. 渲染本週報名成功玩家
+        var activeEl = document.getElementById('online-users-list');
+        if (activeEl) {
+            if (activeNames.length === 0) {
+                activeEl.innerHTML = '<span style="color:#888;">目前尚無符合條件的報名玩家</span>';
+            } else {
+                activeEl.innerHTML = activeNames.map(function(name) {
+                    return '<span style="color:#047857; font-weight:bold; font-size:11px; margin-right:4px;">' + name + '</span>';
+                }).join(' ');
             }
-        }       
+        }
+
+        // 2. 渲染本週尚未報名玩家
+        var inactiveEl = document.getElementById('offline-users-list');
+        if (inactiveEl) {
+            if (filteredInactiveNames.length === 0) {
+                inactiveEl.innerHTML = '<span style="color:#888;">無</span>';
+            } else {
+                inactiveEl.innerHTML = filteredInactiveNames.map(function(name) {
+                    return '<span style="color:#4b5563; font-weight:bold; font-size:11px; margin-right:4px;">' + name + '</span>';
+                }).join(' ');
+            }
+        }
+
+        // 3. 💡 渲染本週龍王志願玩家清單（含職業）
+        var dragonEl = document.getElementById('dragon-wished-users-list');
+        if (dragonEl) {
+            if (dragonWishedList.length === 0) {
+                dragonEl.innerHTML = '<span style="color:#888;">無</span>';
+            } else {
+                dragonEl.innerHTML = dragonWishedList.map(function(item) {
+                    return '<span style="color:#1d4ed8; font-weight:bold; font-size:11px; margin-right:6px;">' + 
+                        item.userId + '<span style="color:#6b7280;">(' + item.jobsText + ')</span></span>';
+                }).join(' ');
+            }
+        }
+
+    } catch (err) {
+        console.error('fetchOnlineUsersList error:', err);
+    }
+}
 
         function updateDynamicWeekTitle(tueDate, weekNum) {
             try {
