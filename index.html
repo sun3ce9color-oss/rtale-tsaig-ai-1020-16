@@ -308,7 +308,7 @@
             <span id="online-users-list">載入中...</span>
         </div>
         <div style="color: #6b7280; border-top: 1px dashed #e5e7eb; width: 100%; padding-top: 3px;">
-            <span>⚪ 本週尚未報名玩家：</span>
+            <span>⚪ 曾報名但本週尚未報名：</span>
             <span id="offline-users-list">載入中...</span>
         </div>
     </div>
@@ -1015,62 +1015,66 @@ async function checkAndExecuteAutoArchiving(now, targetDeadline) {
             }
         })();
 
-        async function fetchOnlineUsersList() {
-    try {
-        var res = null;
-        if (supabaseClient) {
-            res = await supabaseClient.from('artale_members').select('id, characters, ranges');
-        }
-        var activeNames = [];
-        var inactiveNames = [];
+async function fetchOnlineUsersList() {
+            try {
+                var res = null;
+                if (supabaseClient) {
+                    res = await supabaseClient.from('artale_members').select('id, characters, ranges');
+                }
+                var activeNames = [];
+                var inactiveNames = [];
 
-        if (res && res.data) {
-            res.data.forEach(function(m) {
-                var hasTime = m.ranges && Array.isArray(m.ranges) && m.ranges.length > 0;
-                
-                // 💡 判斷是否有設定正式職業（排除空值或「自訂」）
-                var hasValidChar = m.characters && Array.isArray(m.characters) && m.characters.length > 0 && 
-                                   m.characters[0].job && m.characters[0].job !== '自訂';
-                
-                // 只有「有設定正式職業」的玩家才會被處理與顯示
-                if (m.id && hasValidChar) {
-                    if (hasTime) {
-                        activeNames.push(m.id); // 已報名成功
+                if (res && res.data) {
+                    res.data.forEach(function(m) {
+                        var hasTime = m.ranges && Array.isArray(m.ranges) && m.ranges.length > 0;
+                        
+                        // 判斷是否有設定正式職業（排除空值或「自訂」）
+                        var hasValidChar = m.characters && Array.isArray(m.characters) && m.characters.length > 0 && 
+                                           m.characters[0].job && m.characters[0].job !== '自訂';
+                        
+                        if (m.id && hasValidChar) {
+                            if (hasTime) {
+                                activeNames.push(m.id); // 已報名成功（放入綠燈區）
+                            } else {
+                                inactiveNames.push(m.id); // 有帳號但沒填時間（放入灰燈區）
+                            }
+                        }
+                    });
+                }
+
+                // 💡 關鍵修正：透過 Set 過濾，確保「已在上方綠燈區的玩家」，絕對不會同時出現在下方灰燈區
+                var activeSet = new Set(activeNames);
+                var filteredInactiveNames = inactiveNames.filter(function(name) {
+                    return !activeSet.has(name);
+                });
+
+                // 1. 渲染本週報名成功玩家
+                var activeEl = document.getElementById('online-users-list');
+                if (activeEl) {
+                    if (activeNames.length === 0) {
+                        activeEl.innerHTML = '<span style="color:#888;">目前尚無符合條件的報名玩家</span>';
                     } else {
-                        inactiveNames.push(m.id); // 已建帳號與職業，但本週未填時間
+                        activeEl.innerHTML = activeNames.map(function(name) {
+                            return '<span style="color:#047857; font-weight:bold; font-size:11px; margin-right:4px;">' + name + '</span>';
+                        }).join(' ');
                     }
                 }
-                // 未設定職業的玩家會直接被過濾忽略，不顯示在任何名單中
-            });
-        }
 
-        // 1. 渲染本週報名成功玩家
-        var activeEl = document.getElementById('online-users-list');
-        if (activeEl) {
-            if (activeNames.length === 0) {
-                activeEl.innerHTML = '<span style="color:#888;">目前尚無符合條件的報名玩家</span>';
-            } else {
-                activeEl.innerHTML = activeNames.map(function(name) {
-                    return '<span style="color:#047857; font-weight:bold; font-size:11px; margin-right:4px;">' + name + '</span>';
-                }).join(' ');
+                // 2. 渲染本週尚未報名玩家 (已排除上方綠燈區的人)
+                var inactiveEl = document.getElementById('offline-users-list');
+                if (inactiveEl) {
+                    if (filteredInactiveNames.length === 0) {
+                        inactiveEl.innerHTML = '<span style="color:#888;">無</span>';
+                    } else {
+                        inactiveEl.innerHTML = filteredInactiveNames.map(function(name) {
+                            return '<span style="color:#4b5563; font-weight:bold; font-size:11px; margin-right:4px;">' + name + '</span>';
+                        }).join(' ');
+                    }
+                }
+            } catch (err) {
+                console.error('fetchOnlineUsersList error:', err);
             }
-        }
-
-        // 2. 渲染本週尚未報名玩家 (僅顯示有職業但沒填時間者)
-        var inactiveEl = document.getElementById('offline-users-list');
-        if (inactiveEl) {
-            if (inactiveNames.length === 0) {
-                inactiveEl.innerHTML = '<span style="color:#888;">無</span>';
-            } else {
-                inactiveEl.innerHTML = inactiveNames.map(function(name) {
-                    return '<span style="color:#4b5563; font-weight:bold; font-size:11px; margin-right:4px;">' + name + '</span>';
-                }).join(' ');
-            }
-        }
-    } catch (err) {
-        console.error('fetchOnlineUsersList error:', err);
-    }
-}
+        }       
 
         function updateDynamicWeekTitle(tueDate, weekNum) {
             try {
