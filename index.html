@@ -1177,18 +1177,33 @@ async function fetchOnlineUsersList() {
             }
         }
 
-        async function checkForIncomingBindingRequests(myId) {
+    async function checkForIncomingBindingRequests(myId) {
             if (!supabaseClient || !myId) return;
             try {
-                var res = await supabaseClient.from('artale_members').select('id, bindings');
+                updateTimeDateDropdown();
+                var currentWeekStr = '第' + dynamicCurrentWeekNum + '週';
+
+                // 💡 修正 1：限定只查詢「當前週次」的成員資料
+                var res = await supabaseClient.from('artale_members').select('id, bindings').eq('week', currentWeekStr);
+                
+                // 如果當週還沒抓到，才備援查詢全表，但搭配 Set 去重
+                if (!res.data || res.data.length === 0) {
+                    res = await supabaseClient.from('artale_members').select('id, bindings');
+                }
                 if (!res.data) return;
 
                 var incomingRequests = [];
+                var seenKeys = new Set(); // 💡 修正 2：用來防止同一個人、同種契約重複跳彈窗
+
                 res.data.forEach(function(m) {
                     if (m.id !== myId && m.bindings && Array.isArray(m.bindings)) {
                         m.bindings.forEach(function(b) {
                             if (b.targetId === myId && b.contractType) {
-                                incomingRequests.push({ senderId: m.id, contractType: b.contractType });
+                                var uniqueKey = m.id + '_' + b.contractType;
+                                if (!seenKeys.has(uniqueKey)) {
+                                    seenKeys.add(uniqueKey);
+                                    incomingRequests.push({ senderId: m.id, contractType: b.contractType });
+                                }
                             }
                         });
                     }
@@ -1203,7 +1218,7 @@ async function fetchOnlineUsersList() {
                     }, 500);
                 }
             } catch(e) {}
-        }
+        }   
 
         async function handleBoardLogin() {
             if (!supabaseClient) { alert('雲端尚未連線'); return; }
@@ -1574,29 +1589,43 @@ async function fetchOnlineUsersList() {
             var res = await supabaseClient.from('artale_members').select('*').eq('id', id).eq('week', currentWeekStr).maybeSingle();
             
             if (!res.data) {
-                // 💡 關鍵自動繼承邏輯：若當週無記錄，自動尋找該玩家在其他週（上一週）的歷史記錄來繼承角色與綁定
+                // 💡 繼承邏輯：尋找過往舊記錄（優先從 artale_members 找，若無則從 artale_history 找）
                 var prevRes = await supabaseClient.from('artale_members').select('*').eq('id', id).order('week', { ascending: false }).limit(1);
                 var inheritedChars = null;
                 var inheritedBindings = [];
 
                 if (prevRes.data && prevRes.data.length > 0) {
                     var oldData = prevRes.data[0];
-                    if (oldData.pwd !== pwd) { 
-                        alert('❌ 密碼錯誤！'); 
-                        return; 
-                    }
+                    if (oldData.pwd !== pwd) { alert('❌ 密碼錯誤！'); return; }
                     inheritedChars = oldData.characters;
                     inheritedBindings = oldData.bindings || [];
+                } else {
+                    try {
+                        var histRes = await supabaseClient.from('artale_history').select('members_data').order('week_num', { ascending: false });
+                        if (histRes.data && histRes.data.length > 0) {
+                            for (var h = 0; h < histRes.data.length; h++) {
+                                var mList = histRes.data[h].members_data || [];
+                                var foundHistMember = mList.find(function(m) { return m.id === id; });
+                                if (foundHistMember) {
+                                    if (foundHistMember.pwd !== pwd) { alert('❌ 密碼錯誤！'); return; }
+                                    inheritedChars = foundHistMember.characters;
+                                    inheritedBindings = foundHistMember.bindings || [];
+                                    break;
+                                }
+                            }
+                        }
+                    } catch(err) { console.error('History lookup error:', err); }
                 }
 
                 var promptMsg = '查無此 ID暱稱【' + id + '】在 ' + currentWeekStr + ' 的記錄。是否直接建立新記錄？';
                 if (inheritedChars) {
-                    promptMsg = '🐣 偵測到您在上一週已有登記資料！\n\n是否直接為您建立 ' + currentWeekStr + ' 記錄，並【自動帶入上一週的角色與契約設定】？';
+                    promptMsg = '🐣 偵測到您在過往週次已有登記資料！\n\n是否直接為您建立 ' + currentWeekStr + ' 記錄，並【自動帶入上一次的角色與契約設定】？';
                 }
 
                 if (confirm(promptMsg)) {
                     var defaultChars = inheritedChars || [{ job: '', level: '120', style: '', ticket: '', hasMW20: false, v1: '' }];
                     
+                    // 1. 建立當前週次的新記錄
                     await supabaseClient.from('artale_members').upsert({ 
                         id: id, 
                         pwd: pwd, 
@@ -1605,6 +1634,9 @@ async function fetchOnlineUsersList() {
                         ranges: [],
                         bindings: inheritedBindings
                     }, { onConflict: 'id,week' });
+
+                    // 🧹 2. 自動大掃除：把該玩家在「其他舊週次」的紀錄全部自動刪除，後台永遠只留當前這週！
+                    await supabaseClient.from('artale_members').delete().eq('id', id).neq('week', currentWeekStr);
 
                     document.getElementById('characters-container').innerHTML = '';
                     charCounter = 0;
@@ -1615,7 +1647,6 @@ async function fetchOnlineUsersList() {
                     userRanges = [];
                     renderUserRanges();
                     
-                    // 填入綁定介面
                     for (var b = 1; b <= 3; b++) {
                         var bindObj = inheritedBindings[b - 1] || {};
                         var elId = document.getElementById('bind-id-' + b);
@@ -1628,7 +1659,7 @@ async function fetchOnlineUsersList() {
                     updateLoginStatusUI(true, id);
                     
                     if (inheritedChars) {
-                        alert('🎉 成功建立 ' + currentWeekStr + ' 記錄！已自動幫您帶入上一週的角色與綁定，請勾選本週可出戰時間後點擊儲存！');
+                        alert('🎉 成功建立 ' + currentWeekStr + ' 記錄！已自動幫您帶入過往角色，請填寫本週時間後點擊儲存！');
                     } else {
                         alert('🐣 註冊成功！請填寫角色細節並儲存。');
                     }
@@ -1664,7 +1695,7 @@ async function fetchOnlineUsersList() {
             syncUserCredentials(id, pwd);
             updateLoginStatusUI(true, id);
             alert('🐣 登入成功！');
-        }       
+        }
 
         async function handleSaveData() {
             if (!supabaseClient) { alert('雲端尚未連線'); return; }
