@@ -1496,31 +1496,33 @@ async function fetchOnlineUsersList() {
             } else { alert('❌ 密碼不正確或驗證失敗！'); }
         }
 
-        function syncBossOptionsForCard(cardBox) {
-            if (!cardBox) return;
-            var selects = [
-                cardBox.querySelector('.c-v1'),
-                cardBox.querySelector('.c-v2'),
-                cardBox.querySelector('.c-v3'),
-                cardBox.querySelector('.c-exc1'),
-                cardBox.querySelector('.c-exc2')
-            ].filter(Boolean);
+       function syncBossOptionsForCard(cardBox, changedSelect) {
+    if (!cardBox) return;
+    
+    var v1 = cardBox.querySelector('.c-v1');
+    var v2 = cardBox.querySelector('.c-v2');
+    var v3 = cardBox.querySelector('.c-v3');
+    var exc1 = cardBox.querySelector('.c-exc1');
+    var exc2 = cardBox.querySelector('.c-exc2');
+    var selects = [v1, v2, v3, exc1, exc2].filter(Boolean);
 
-            var selectedValues = selects.map(function(s){ return s.value; }).filter(function(v){ return v && v !== 'ALL'; });
+    // 💡 當你選擇某個 Boss 時，如果其他選單已經選了它，就把舊的那個清空重置
+    if (changedSelect && changedSelect.value && changedSelect.value !== 'ALL') {
+        var currentVal = changedSelect.value;
+        selects.forEach(function(otherSelect) {
+            if (otherSelect !== changedSelect && otherSelect.value === currentVal) {
+                otherSelect.value = '';
+            }
+        });
+    }
 
-            selects.forEach(function(currentSelect) {
-                var currentVal = currentSelect.value;
-                Array.from(currentSelect.options).forEach(function(opt) {
-                    if (!opt.value || opt.value === 'ALL') {
-                        opt.disabled = false;
-                    } else if (selectedValues.includes(opt.value) && opt.value !== currentVal) {
-                        opt.disabled = true;
-                    } else {
-                        opt.disabled = false;
-                    }
-                });
-            });
-        }
+    // 💡 移除原本的 opt.disabled 反灰限制，讓所有選項都可以直接點選！
+    selects.forEach(function(currentSelect) {
+        Array.from(currentSelect.options).forEach(function(opt) {
+            opt.disabled = false;
+        });
+    });
+}
 
         function addCharacterCard(data) {
             data = data || null;
@@ -1554,11 +1556,11 @@ async function fetchOnlineUsersList() {
                 '</div>';
             container.appendChild(div);
 
-            div.querySelectorAll('.boss-sel').forEach(function(sel) {
-                sel.addEventListener('change', function() {
-                    syncBossOptionsForCard(div);
-                });
-            });
+div.querySelectorAll('.boss-sel').forEach(function(sel) {
+    sel.addEventListener('change', function() {
+        syncBossOptionsForCard(div, this); //
+    });
+});
 
             if (data) {
                 div.querySelector('.c-job').value = data.job || '';
@@ -4163,6 +4165,7 @@ function executeLoadData(mode, slotNum) {
 }
 // 🚨 一般排班系統 B 區即時衝突檢核與警示提示功能修復
 // 🚨 修正後：包含志願、同隊重複ID、同時段衝突、以及「出戰時間不吻合檢查」的完整即時驗證
+
 function checkAndRenderBValidationErrors() {
     var validationBox = document.getElementById('shift-b-validation-box');
     var validationList = document.getElementById('shift-b-validation-list');
@@ -4175,15 +4178,13 @@ function checkAndRenderBValidationErrors() {
         var teamBoss = t.boss.replace(/連七|4場|\s+/g, '').trim();
         var userCountInTeam = {};
         
-        // 嘗試從隊伍中取得日期 (例如從 t.dateKey 或 t.fullTimeStr 解析出 MM/DD)
         var teamDateKey = t.dateKey || '';
         if (!teamDateKey && t.fullTimeStr) {
             var dateMatch = t.fullTimeStr.match(/(\d{1,2}\/\d{1,2})/);
             if (dateMatch) teamDateKey = dateMatch[1];
         }
 
-        // 嘗試從 fullTimeStr 解析開打時間 (例如 20:00)
-        var teamStartM = 1200; // 預設 20:00
+        var teamStartM = 1200; 
         if (t.fullTimeStr) {
             var timeMatch = t.fullTimeStr.match(/(\d{1,2}:\d{2})/);
             if (timeMatch) teamStartM = timeStrToMinutes(timeMatch[1]);
@@ -4192,12 +4193,10 @@ function checkAndRenderBValidationErrors() {
         t.members.forEach(function(m) {
             if (m.isEmptySlot || !m.userId || m.userId === '新成員' || m.job === '自訂') return;
             
-            // 檢查志願是否吻合
             if (!hasUserWishedBoss(m, teamBoss)) {
                 errorMessages.push('⚠️ ' + m.userId + '角色(' + m.job + ') 志願不吻合 [' + teamBoss + ']');
             }
 
-            // 💡 檢查玩家是否在該日期有填寫可出戰時間，且時間區段涵蓋該場次
             if (teamDateKey && m.ranges && Array.isArray(m.ranges) && m.ranges.length > 0) {
                 var hasMatchedRange = m.ranges.some(function(r) {
                     if (!isDateMatched(r.dateKey, teamDateKey)) return false;
@@ -4212,11 +4211,9 @@ function checkAndRenderBValidationErrors() {
                 errorMessages.push('⚠️ ' + m.userId + '角色(' + m.job + ') 該日無任何可出戰時間記錄');
             }
 
-            // 統計同隊中的玩家 ID 次數
             userCountInTeam[m.userId] = (userCountInTeam[m.userId] || 0) + 1;
         });
 
-        // 檢測同隊重複 ID
         Object.keys(userCountInTeam).forEach(function(uId) {
             if (userCountInTeam[uId] > 1) {
                 errorMessages.push('🚨 【' + uId + '】玩家重複出現在隊伍【' + t.boss + ' (' + t.fullTimeStr + ')】中！');
@@ -4244,7 +4241,6 @@ function checkAndRenderBValidationErrors() {
         });
     });
 
-    // 檢查是否有同時間出現在多個隊伍的情況
     Object.keys(userTimeSlotsMap).forEach(function(compositeKey) {
         var teamsWithUser = userTimeSlotsMap[compositeKey];
         if (teamsWithUser.length > 1) {
@@ -4252,6 +4248,43 @@ function checkAndRenderBValidationErrors() {
             var uId = parts[1];
             var tStr = parts[0];
             errorMessages.push('🚨 【' + uId + '】玩家在【' + tStr + '】同時段出現在不同隊伍中 (' + teamsWithUser.join(', ') + ')！');
+        }
+    });
+
+    // 3. 🎫 檢查所有填寫「🎫想使用」的角色的排班數量是否達到 2 支隊伍
+    var charTeamCounts = {};
+    var charDetails = {};
+
+    interactiveTeamsState.forEach(function(t) {
+        t.members.forEach(function(m) {
+            if (m.isEmptySlot || !m.uniqueKey) return;
+            if (m.ticket === '🎫想使用') {
+                charTeamCounts[m.uniqueKey] = (charTeamCounts[m.uniqueKey] || 0) + 1;
+                charDetails[m.uniqueKey] = { userId: m.userId, job: m.job };
+            }
+        });
+    });
+
+    if (typeof unassignedCandidatesState !== 'undefined') {
+        unassignedCandidatesState.forEach(function(c) {
+            if (c.ticket === '🎫想使用' && c.uniqueKey) {
+                if (charTeamCounts[c.uniqueKey] === undefined) {
+                    charTeamCounts[c.uniqueKey] = 0;
+                    charDetails[c.uniqueKey] = { userId: c.userId, job: c.job };
+                }
+            }
+        });
+    }
+
+    Object.keys(charTeamCounts).forEach(function(key) {
+        var count = charTeamCounts[key];
+        var details = charDetails[key];
+        if (details && count < 2) {
+            if (count === 0) {
+                errorMessages.push('🎫 ' + details.userId + ' (' + (details.job || '角色') + ') 突襲券【🎫想使用】目前未排入任何隊伍！');
+            } else if (count === 1) {
+                errorMessages.push('🎫 ' + details.userId + ' (' + (details.job || '角色') + ') 突襲券【🎫想使用】目前僅排入 1 支隊伍（建議排滿 2 支）！');
+            }
         }
     });
 
