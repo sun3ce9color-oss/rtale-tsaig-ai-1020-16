@@ -479,7 +479,10 @@
                 <div id="stat-v13-top1-text">🏆 志願數最多的突襲：尚無資料</div>
                 <div id="stat-v13-top2-text">🥈 志願數第二多的突襲：尚無資料</div>
             </div>
-
+<div id="dragon-time-analysis-box" style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border: 2px solid #475569; border-radius: 8px; padding: 12px; margin-bottom: 15px; font-size: 12.5px; color: #1e293b; font-weight: bold; box-shadow: 0 2px 6px rgba(51,65,85,0.12);">
+    <div style="margin-bottom: 4px; color: #0f172a;">🐲 <b>龍王志願玩家可出戰時段分析：</b></div>
+    <div id="dragon-time-analysis-content" style="color: #334155; font-weight: normal; line-height: 1.5;">載入分析中...</div>
+</div>
             <div style="font-size:11.5px; margin-bottom:8px; line-height:1.6; color:#374151;">
                 ✨ <b>滿額發光標示：</b>當多位玩家當日志願符合時邊框會發亮。
             </div>
@@ -4056,7 +4059,7 @@ async function renderSchedule() {
         });
         html += '</div></div>';
         areaEl.innerHTML = html;
-
+renderDragonTimeOverlapAnalysis(rawMembers);
     } catch (err) {
         areaEl.innerHTML = '<div style="color:red; text-align:center;">讀取總覽資料發生錯誤：' + err.message + '</div>';
     }
@@ -4494,6 +4497,127 @@ function checkAndRenderHistoryBValidationErrors() {
                 alert('❌ 執行發生錯誤：' + err.message);
             }
         }
+
+function renderDragonTimeOverlapAnalysis(allMembers) {
+    var analysisEl = document.getElementById('dragon-time-analysis-content');
+    if (!analysisEl) return;
+
+    var validCycleKeys = weekCycle.map(function(w) { return w.key; });
+    var dragonPlayerRanges = [];
+
+    // 1. 篩選出本週有報名、且「志願中有填龍王或ALL」的玩家與其時間
+    allMembers.forEach(function(m) {
+        var hasValidRange = (m.ranges || []).some(function(r) {
+            return validCycleKeys.some(function(ck) { return isDateMatched(r.dateKey, ck); });
+        });
+        if (!hasValidRange || !m.characters || !Array.isArray(m.characters)) return;
+
+        var hasDragonWish = m.characters.some(function(c) {
+            if (!c || !c.job || c.job === '自訂') return false;
+            var v1 = (c.v1 || '').trim();
+            var v2 = (c.v2 || '').trim();
+            var v3 = (c.v3 || '').trim();
+            return (v1 === '龍王' || v2 === '龍王' || v3 === '龍王' || 
+                    v1 === 'ALL' || v2 === 'ALL' || v3 === 'ALL');
+        });
+
+        if (hasDragonWish) {
+            m.ranges.forEach(function(r) {
+                if (validCycleKeys.some(function(ck) { return isDateMatched(r.dateKey, ck); })) {
+                    dragonPlayerRanges.push({
+                        userId: m.id,
+                        dateLabel: r.dateLabel, // 例如 "週一 (11/16)"
+                        startStr: r.startStr,     // 例如 "20:00"
+                        endStr: r.endStr
+                    });
+                }
+            });
+        }
+    });
+
+    if (dragonPlayerRanges.length === 0) {
+        analysisEl.innerHTML = '目前尚無任何「龍王志願玩家」填寫可出戰時間。';
+        return;
+    }
+
+    // 2. 以半小時為單位累加重疊人數
+    var timeSlotCounts = {}; 
+
+    dragonPlayerRanges.forEach(function(item) {
+        var startMin = timeStrToMinutesHelper(item.startStr);
+        var endMin = timeStrToMinutesHelper(item.endStr);
+        if (endMin <= startMin) endMin = 1439;
+
+        for (var m = startMin; m < endMin; m += 30) {
+            var h = Math.floor(m / 60);
+            var min = m % 60;
+            var timeSlotStr = String(h).padStart(2, '0') + ':' + String(min).padStart(2, '0');
+            var compositeKey = item.dateLabel + '@' + timeSlotStr;
+
+            if (!timeSlotCounts[compositeKey]) {
+                timeSlotCounts[compositeKey] = new Set();
+            }
+            timeSlotCounts[compositeKey].add(item.userId);
+        }
+    });
+
+    // 3. 找出最高重疊人數
+    var maxCount = 0;
+    Object.keys(timeSlotCounts).forEach(function(key) {
+        var count = timeSlotCounts[key].size;
+        if (count > maxCount) maxCount = count;
+    });
+
+    if (maxCount === 0) {
+        analysisEl.innerHTML = '龍王志願玩家之間沒有重疊的出戰時段。';
+        return;
+    }
+
+    // 4. 按「日期」分類並找出每天最早達標的時間點
+    var dayEarliestMap = {}; 
+
+    Object.keys(timeSlotCounts).forEach(function(compositeKey) {
+        if (timeSlotCounts[compositeKey].size === maxCount) {
+            var parts = compositeKey.split('@');
+            var dateLabel = parts[0]; // 例如 "週一 (11/16)"
+            var timeStr = parts[1];   // 例如 "20:00"
+            var startM = timeStrToMinutesHelper(timeStr);
+
+            if (dayEarliestMap[dateLabel] === undefined || startM < dayEarliestMap[dateLabel]) {
+                dayEarliestMap[dateLabel] = startM;
+            }
+        }
+    });
+
+    // 5. 💡 重新排版日期字串為：11/16(週一) 20:00 格式
+    var displaySlots = [];
+    Object.keys(dayEarliestMap).forEach(function(dateLabel) {
+        var earliestM = dayEarliestMap[dateLabel];
+        var h = Math.floor(earliestM / 60);
+        var min = earliestM % 60;
+        var timeStr = String(h).padStart(2, '0') + ':' + String(min).padStart(2, '0');
+
+        // 解析 "週一 (11/16)" -> 轉成 "11/16(週一)"
+        var match = dateLabel.match(/(週[一二三四五六日])\s*\((\d{1,2}\/\d{1,2})\)/);
+        var formattedDate = dateLabel; // 預設保留原樣防呆
+        if (match) {
+            var weekday = match[1]; // "週一"
+            var dateStr = match[2]; // "11/16"
+            formattedDate = dateStr + '(' + weekday + ')';
+        }
+
+        displaySlots.push(formattedDate + ' ' + timeStr);
+    });
+
+    displaySlots.sort();
+
+    var html = '🔥 共 <b>' + maxCount + ' 位</b> 龍王志願最多重疊之時段：<br>';
+    html += '<span style="color: #0f172a; font-weight: 900; background: #ffffff; padding: 5px 10px; border-radius: 6px; border: 1.5px solid #64748b; display: inline-block; margin-top: 6px; line-height: 1.6; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">';
+    html += displaySlots.join('  |  ');
+    html += '</span>';
+
+    analysisEl.innerHTML = html;
+}
 
     </script>
 </body>
