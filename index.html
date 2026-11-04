@@ -312,7 +312,7 @@
             <span id="offline-users-list">載入中...</span>
         </div>
         <div style="color: #1e3a8a; border-top: 1px dashed #e5e7eb; width: 100%; padding-top: 3px; text-align: left;">
-            <span>🐲 本週龍王志願玩家：</span>
+            <span>🐲 志願序有填龍王ㄉ玩家：</span>
             <span id="dragon-wished-users-list">載入中...</span>
         </div>
     </div>
@@ -2340,40 +2340,60 @@ function recordCharacterBattle(cand, dateKey, startMinutes) {
             return { teams: teamsResult, unassigned: finalUnassigned };
         }
 
-        async function runSmartShiftAlgorithm() {
+async function runSmartShiftAlgorithm() {
             if (!supabaseClient) { alert('雲端尚未連線'); return; }
 
             var res = await supabaseClient.from('artale_members').select('*');
             if (!res.data) return;
 
             var allMembers = res.data;
+            var validCycleKeys = weekCycle.map(function(w) { return w.key; });
+
+            // 💡 1. 建立「本週有填寫有效出戰時間」的玩家 Set (確保只採計本週有報名者)
+            var activeUserIdsSet = new Set();
+            allMembers.forEach(function(m) {
+                var hasValidRange = (m.ranges || []).some(function(r) {
+                    return validCycleKeys.some(function(ck) { return isDateMatched(r.dateKey, ck); });
+                });
+                if (hasValidRange) {
+                    activeUserIdsSet.add(m.id);
+                }
+            });
+
             var memberBindingMap = {};
             globalConfirmedBindings = [];
 
+            // 💡 2. 僅收集「本週有報名」玩家的契約
             allMembers.forEach(function(m) {
-                if (m.bindings && Array.isArray(m.bindings)) {
+                if (activeUserIdsSet.has(m.id) && m.bindings && Array.isArray(m.bindings)) {
                     memberBindingMap[m.id] = m.bindings;
                 }
             });
 
+            // 💡 3. 檢查雙向契約，並確保契約雙方「本週都確實有報名」才生效！
             allMembers.forEach(function(m) {
                 var myId = m.id;
+                if (!activeUserIdsSet.has(myId)) return; // 沒報名者跳過
+
                 var myBinds = memberBindingMap[myId] || [];
                 myBinds.forEach(function(b) {
                     var tId = b.targetId;
                     var cType = b.contractType;
                     if (!tId || !cType) return;
-                    var tBinds = memberBindingMap[tId] || [];
-                    var isMatched = tBinds.some(function(tb) { return tb.targetId === myId && tb.contractType === cType; });
-                    if (isMatched && myId < tId) {
-                        globalConfirmedBindings.push({ p1: myId, p2: tId, contractType: cType });
+
+                    // 關鍵條件：只有當對方本週也「確定有報名」時，契約才算數！
+                    if (activeUserIdsSet.has(tId)) {
+                        var tBinds = memberBindingMap[tId] || [];
+                        var isMatched = tBinds.some(function(tb) { return tb.targetId === myId && tb.contractType === cType; });
+                        if (isMatched && myId < tId) {
+                            globalConfirmedBindings.push({ p1: myId, p2: tId, contractType: cType });
+                        }
                     }
                 });
             });
 
             var allCandidates = [];
             var ticketWantUsers = []; 
-            var validCycleKeys = weekCycle.map(function(w) { return w.key; });
 
             allMembers.forEach(function(m) {
                 var validRanges = (m.ranges || []).filter(function(r) {
