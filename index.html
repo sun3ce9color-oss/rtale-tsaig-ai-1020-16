@@ -106,7 +106,19 @@
         .schedule-day-header { background: #e2e8f0; color: #334155; font-weight: bold; text-align: center; padding: 6px 2px; font-size: 11px; border-bottom: 1px solid #cbd5e1; }
         .schedule-day-body { padding: 4px; display: flex; flex-direction: column; gap: 6px; flex-grow: 1; min-height: 250px; }
         
-        .member-card { padding: 6px 5px; border-radius: 6px; border: 2px solid transparent; box-shadow: 0 1px 2px rgba(0,0,0,0.04); position: relative; min-height: 88px; transition: all 0.2s ease; }
+        @keyframes glow-pulse {
+            0% { box-shadow: 0 0 4px rgba(0,0,0,0.1), inset 0 0 2px rgba(255,255,255,0.5); }
+            50% { box-shadow: 0 0 12px 3px var(--glow-color, rgba(37,99,235,0.6)), inset 0 0 6px var(--glow-color, rgba(37,99,235,0.3)); }
+            100% { box-shadow: 0 0 4px rgba(0,0,0,0.1), inset 0 0 2px rgba(255,255,255,0.5); }
+        }
+
+        .member-card.is-glowing {
+            animation: glow-pulse 2s infinite ease-in-out;
+            border-width: 2.5px !important;
+            transform: translateY(-1px);
+        }
+
+        .member-card { padding: 6px 5px; border-radius: 6px; border: 2px solid #e5e7eb; box-shadow: 0 1px 2px rgba(0,0,0,0.04); position: relative; min-height: 88px; transition: all 0.2s ease; }
         
         .job-color-黑騎, .job-color-龍騎士 { color: #2563eb !important; }
         .job-color-聖騎 { color: #ea580c !important; }
@@ -324,12 +336,12 @@
     </div>
 </header>
         <div class="nav-btns">
-            <button type="button" id="nav-btn-member" onclick="switchTab('member')" class="btn btn-tab-member active">✍️ 團員報名/修改</button>
-            <button type="button" id="nav-btn-schedule" onclick="switchTab('schedule')" class="btn btn-tab-schedule">📅 突襲排程總表</button>
-            <button type="button" id="nav-btn-shift" onclick="switchTab('shift')" class="btn btn-tab-shift">🤖 排班系統</button>
+            <button type="button" id="nav-btn-member" onclick="switchTab('member')" class="btn btn-tab-member active">✍️ 突襲王報名區</button>
+            <button type="button" id="nav-btn-schedule" onclick="switchTab('schedule')" class="btn btn-tab-schedule">📅 報名概況總表</button>
+            <button type="button" id="nav-btn-shift" onclick="switchTab('shift')" class="btn btn-tab-shift">🤖 排班破爛系統</button>
             <button type="button" id="nav-btn-schedule-pub" onclick="switchTab('schedule-pub')" class="btn btn-tab-schedule-pub">📢 突襲班表公佈</button>
             <button type="button" id="nav-btn-board" onclick="switchTab('board')" class="btn btn-tab-board">💬 菜G留言板</button>
-            <button type="button" id="nav-btn-history" onclick="switchTab('history')" class="btn btn-tab-history">📜 歷史紀錄</button>
+            <button type="button" id="nav-btn-history" onclick="switchTab('history')" class="btn btn-tab-history">📜 歷史G錄</button>
             <button type="button" id="nav-btn-admin" onclick="switchTab('admin')" class="btn btn-tab-admin">👑 管理員</button>
         </div>
 
@@ -349,9 +361,10 @@
                         <label>4 位密碼</label>
                         <input type="password" id="user-pwd" maxlength="4" placeholder="密碼" oninput="syncUserCredentials(document.getElementById('user-id').value, this.value)">
                     </div>
-                    <button type="button" onclick="handleLoadData()" class="btn btn-blue" style="font-size:12px; padding:9px 12px; background:#0d9488;">🐣 登入 / 載入</button>
-                    <button type="button" onclick="handleLogout()" class="btn btn-red" style="font-size:12px; padding:9px 12px; background:#4b5563;">🚪 登出</button>
-                    <button type="button" onclick="handleDeleteSelfDataConfirm()" class="btn btn-red" style="font-size:12px; padding:9px 12px;">🗑️ 刪除報名</button>
+                    <button type="button" onclick="handleLoadData()" class="btn btn-blue" style="font-size:12px; padding:9px 12px; background:#0d9488;">🐣 菜G登入</button>
+                    <button type="button" onclick="handleLogout()" class="btn btn-red" style="font-size:12px; padding:9px 12px; background:#4b5563;">🚪 登出菜G</button>
+                    <button type="button" onclick="handleCancelWeeklyBookingOnly()" class="btn btn-orange" style="font-size:12px; padding:9px 12px; background:#f59e0b;">⏳ 取消報名</button>
+                    <button type="button" onclick="handleDeleteSelfDataConfirm()" class="btn btn-red" style="font-size:12px; padding:9px 12px;">🗑️ 刪除帳號</button>
                 </div>
 
                 <div style="background: #fffbeb; border: 1px solid #fde68a; color: #b45309; padding: 10px 14px; border-radius: 8px; font-size: 12.5px; font-weight: bold; margin-top: 10px; box-shadow: 0 2px 6px rgba(251,191,36,0.08);">
@@ -464,10 +477,10 @@
             <h3 style="margin:0 0 8px 0; border-bottom:1px solid #eee; padding-bottom:8px; font-size:15px;">📅 本週成員出戰總覽表</h3>
             <div id="my-booking-summary-box" style="background: linear-gradient(135deg, #eff6ff 100%, #dbeafe 0%); border: 2px solid #2563eb; border-radius: 8px; padding: 12px; margin-bottom: 15px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <span style="font-weight: bold; color: #1e40af; font-size: 14px;">🎯 我的報名狀態查詢</span>
+                    <span style="font-weight: bold; color: #1e40af; font-size: 14px;">🎯 本週報名狀態查詢</span>
                     <span id="my-booking-status-tag" style="font-size: 11px; background: #fee2e2; color: #b91c1c; padding: 2px 8px; border-radius: 10px; font-weight: bold;">未登入</span>
                 </div>
-                <div id="my-booking-details" style="font-size: 12px; color: #374151;">請先於上方「團員報名/修改」輸入 ID暱稱 登入。</div>
+                <div id="my-booking-details" style="font-size: 12px; color: #374151;"></div>
                 <div style="margin-top: 8px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
                     <input type="text" id="quick-check-id" maxlength="7" placeholder="輸入 ID暱稱 查詢" style="max-width: 180px; padding: 4px 8px; font-size: 12px;" oninput="renderMyBookingSummary(this.value)">
                 </div>
@@ -1285,7 +1298,7 @@ async function fetchOnlineUsersList() {
             if (confirm('確定要登出當前帳號嗎？')) location.reload();
         }
 
-        async function renderMyBookingSummary(queryId) {
+async function renderMyBookingSummary(queryId) {
             queryId = (queryId || '').trim();
             var statusTag = document.getElementById('my-booking-status-tag');
             var detailsEl = document.getElementById('my-booking-details');
@@ -1294,14 +1307,25 @@ async function fetchOnlineUsersList() {
             if (!queryId) {
                 statusTag.innerText = '未登入';
                 statusTag.className = 'login-status-badge status-logged-out';
-                detailsEl.innerHTML = '請先於上方「團員報名/修改」輸入 ID暱稱 登入。';
+                detailsEl.innerHTML = '';
                 return;
             }
 
             try {
                 if (!supabaseClient) return;
-                var res = await supabaseClient.from('artale_members').select('*').eq('id', queryId).maybeSingle();
-                if (!res.data) {
+                var cleanQueryId = queryId.trim().toLowerCase();
+                
+                // 1. 抓取全部資料並進行不分大小寫模糊比對
+                var res = await supabaseClient.from('artale_members').select('*');
+                var data = null;
+                if (res.data) {
+                    var found = res.data.find(function(m) {
+                        return m.id && m.id.trim().toLowerCase() === cleanQueryId;
+                    });
+                    if (found) data = found;
+                }
+
+                if (!data) {
                     statusTag.innerText = '未報名';
                     statusTag.className = 'login-status-badge status-logged-out';
                     detailsEl.innerHTML = '查無玩家【<b>' + queryId + '</b>】的報名資料。';
@@ -1310,19 +1334,34 @@ async function fetchOnlineUsersList() {
 
                 statusTag.innerText = '✅ 已完成報名';
                 statusTag.className = 'login-status-badge status-logged-in';
-                var chars = res.data.characters || [res.data];
-                var ranges = res.data.ranges || [];
+                
+                // 💡 強固解析 characters 陣列（相容舊版單一角色結構或新版多角色陣列）
+                var chars = [];
+                if (Array.isArray(data.characters) && data.characters.length > 0) {
+                    chars = data.characters;
+                } else if (data.job) {
+                    chars = [data]; // 舊版相容
+                } else {
+                    chars = [{ job: '未設定', level: '120', style: '', ticket: '', v1: '無' }];
+                }
+
+                var ranges = data.ranges || [];
 
                 var html = '<div style="line-height: 1.6;">';
-                html += '<b>👤 ID暱稱：</b>' + res.data.id + '<br>';
+                html += '<b>👤 ID暱稱：</b>' + data.id + '<br>';
                 html += '<b>⚔️ 出戰角色數量：</b>' + chars.length + ' 隻<br>';
                 
                 chars.forEach(function(c, idx) {
-                    var mw = c.hasMW20 ? ' (🍁20)' : '';
+                    var mw = c && c.hasMW20 ? ' (🍁20)' : '';
+                    var jobName = (c && c.job) ? c.job : '未設定';
+                    var jobLvl = (c && c.level) ? c.level : '120';
+                    var jobStyle = (c && c.style) ? c.style : '未填';
+                    var jobTicket = (c && c.ticket) ? c.ticket : '未填';
+                    
                     html += '<div style="margin-top: 4px; padding-left: 8px; border-left: 3px solid #2563eb;">' +
-                        '<b>角色 #' + (idx + 1) + '：</b>' + c.job + ' Lv.' + c.level + mw + ' | ' + c.style + ' | ' + c.ticket + '<br>' +
-                        '<b>志願：</b>1:' + (c.v1 || '無') + ' / 2:' + (c.v2 || '無') + ' / 3:' + (c.v3 || '無') + 
-                        (c.exc1 ? ' | ❌不打:' + c.exc1 : '') + (c.exc2 ? ', ' + c.exc2 : '') +
+                        '<b>角色 #' + (idx + 1) + '：</b>' + jobName + ' Lv.' + jobLvl + mw + ' | ' + jobStyle + ' | ' + jobTicket + '<br>' +
+                        '<b>志願：</b>1:' + (c && c.v1 ? c.v1 : '無') + ' / 2:' + (c && c.v2 ? c.v2 : '無') + ' / 3:' + (c && c.v3 ? c.v3 : '無') + 
+                        (c && c.exc1 ? ' | ❌不打:' + c.exc1 : '') + (c && c.exc2 ? ', ' + c.exc2 : '') +
                     '</div>';
                 });
 
@@ -1337,8 +1376,10 @@ async function fetchOnlineUsersList() {
                 }
                 html += '</div>';
                 detailsEl.innerHTML = html;
-            } catch(e) {}
-        }
+            } catch(e) {
+                console.error("renderMyBookingSummary error:", e);
+            }
+        }        
 
         async function renderHistoryUserSummary(queryId) {
             queryId = (queryId || '').trim();
@@ -1353,7 +1394,10 @@ async function fetchOnlineUsersList() {
                 return;
             }
 
-            var memberData = currentHistoryMembersData.find(function(m) { return m.id === queryId; });
+           var cleanQueryId = (queryId || '').trim().toLowerCase();
+var memberData = currentHistoryMembersData.find(function(m) { 
+    return m.id && m.id.trim().toLowerCase() === cleanQueryId; 
+});
             if (!memberData) {
                 statusTag.innerText = '未報名';
                 statusTag.className = 'login-status-badge status-logged-out';
@@ -1542,6 +1586,37 @@ async function fetchOnlineUsersList() {
             } else { alert('❌ 密碼不正確或驗證失敗！'); }
         }
 
+async function handleCancelWeeklyBookingOnly() {
+            if (!supabaseClient) { alert('雲端尚未連線'); return; }
+            var id = document.getElementById('user-id').value.trim();
+            var pwd = document.getElementById('user-pwd').value.trim();
+            if (!id || !pwd) { alert('請先輸入 ID暱稱 與密碼登入！'); return; }
+            
+            if (!confirm('⏳ 確定要取消玩家【' + id + '】本週的報名時間嗎？\n\n(提示：您的角色與契約設定將會完整保留，僅會清空本週的可出戰時間段)')) return;
+
+            var currentWeekStr = '第' + dynamicCurrentWeekNum + '週';
+            
+            // 驗證密碼是否正確
+            var res = await supabaseClient.from('artale_members').select('*').eq('id', id).eq('week', currentWeekStr).maybeSingle();
+            if (!res.data || res.data.pwd !== pwd) {
+                alert('❌ 密碼不正確或該週查無資料！');
+                return;
+            }
+
+            // 僅將 ranges（出戰時間段）清空為空陣列
+            var updateRes = await supabaseClient.from('artale_members').update({ ranges: [] }).eq('id', id).eq('week', currentWeekStr);
+            
+            if (updateRes.error) {
+                alert('❌ 取消本週報名失敗：' + updateRes.error.message);
+            } else {
+                userRanges = [];
+                renderUserRanges();
+                renderMyBookingSummary(id);
+                fetchOnlineUsersList();
+                alert('✅ 已成功取消本週報名時間！您的角色與契約設定已妥善保留。');
+            }
+        }
+
        function syncBossOptionsForCard(cardBox, changedSelect) {
     if (!cardBox) return;
     
@@ -1588,10 +1663,16 @@ async function fetchOnlineUsersList() {
                     '<div><label>職業 (必填)</label><select class="c-job"><option value="">--請選擇--</option><option value="黑騎">黑騎</option><option value="聖騎">聖騎</option><option value="英雄">英雄</option><option value="主教">主教</option><option value="冰雷">冰雷</option><option value="火毒">火毒</option><option value="箭神">箭神</option><option value="神射">神射</option><option value="拳霸">拳霸</option><option value="槍神">槍神</option><option value="刀賊">刀賊</option><option value="鏢賊">鏢賊</option></select></div>' +
                     '<div><label>等級 (最高 200)</label><input type="number" class="c-level" value="120" min="1" max="200"></div>' +
                     '<div><label>出戰型態 (必填)</label><select class="c-style"><option value="">--請選擇--</option><option value="💪積極出戰">💪積極出戰</option><option value="🪷佛系出戰">🪷佛系出戰</option></select></div>' +
-                    '<div><label>突襲券意願 (必填)</label><select class="c-ticket"><option value="">--請選擇--</option><option value="🎫想使用">🎫想使用</option><option value="⚡可配合支援">⚡可配合支援</option><option value="🎟️不使用">🎟️不使用</option></select></div>' +
-                '</div>' +
-                '<div style="margin-bottom: 8px;"><label style="font-weight:normal; cursor:pointer; color:#0d9488;"><input type="checkbox" class="c-mw20" style="width:auto;"> 具備 🍁楓祝20 技能</label></div>' +
-                '<div class="grid-3" style="margin-bottom: 8px;">' +
+'<div><label>突襲券意願 (必填)</label><select class="c-ticket"><option value="">--請選擇--</option><option value="🎫想使用">🎫想使用</option><option value="⚡可配合支援">⚡可配合支援</option><option value="🟥不使用">🟥不使用</option></select></div>' +
+    '</div>' + // 關閉上一行 grid
+    // 這裡用一個精巧的 flex 區塊把楓祝20 放進去，不佔用大欄位
+    '<div style="margin: 6px 0 10px 0; display: flex; align-items: center;">' +
+    '<label style="display: inline-flex; align-items: center; gap: 4px; font-weight: normal; font-size: 13px; cursor: pointer; color: #0d9488; user-select: none; margin: 0;">' +
+    '<input type="checkbox" class="c-mw20" style="width: auto; margin: 0; cursor: pointer;">' +
+    '<span>具備 🍁楓祝20 技能</span>' +
+    '</label>' +
+    '</div>' +
+    '<div class="grid-3" style="margin-bottom: 8px;">' +               
                     '<div><label>🟢 第一志願 (必填)</label><select class="c-v1 boss-sel"><option value="">--請選擇--</option><option value="ALL">ALL</option><option value="普拉">普拉</option><option value="困拉">困拉</option><option value="炎魔">炎魔</option><option value="龍王">龍王</option><option value="樹王">樹王</option><option value="蝴蝶">蝴蝶</option><option value="卡農">卡農</option></select></div>' +
                     '<div><label>🟡 第二志願 (選填)</label><select class="c-v2 boss-sel"><option value="">--無--</option><option value="ALL">ALL</option><option value="普拉">普拉</option><option value="困拉">困拉</option><option value="炎魔">炎魔</option><option value="龍王">龍王</option><option value="樹王">樹王</option><option value="蝴蝶">蝴蝶</option><option value="卡農">卡農</option></select></div>' +
                     '<div><label>🔵 第三志願 (選填)</label><select class="c-v3 boss-sel"><option value="">--無--</option><option value="ALL">ALL</option><option value="普拉">普拉</option><option value="困拉">困拉</option><option value="炎魔">炎魔</option><option value="龍王">龍王</option><option value="樹王">樹王</option><option value="蝴蝶">蝴蝶</option><option value="卡農">卡農</option></select></div>' +
@@ -1634,7 +1715,12 @@ div.querySelectorAll('.boss-sel').forEach(function(sel) {
             var currentWeekStr = '第' + dynamicCurrentWeekNum + '週';
 
             // 1. 先尋找當前目標週次的記錄
-            var res = await supabaseClient.from('artale_members').select('*').eq('id', id).eq('week', currentWeekStr).maybeSingle();
+            var cleanId = id.trim().toLowerCase();
+var resAll = await supabaseClient.from('artale_members').select('*').eq('week', currentWeekStr);
+var matchedRecord = resAll.data ? resAll.data.find(function(m) {
+    return m.id && m.id.trim().toLowerCase() === cleanId;
+}) : null;
+var res = { data: matchedRecord };
             
             if (!res.data) {
                 // 💡 繼承邏輯：尋找過往舊記錄（優先從 artale_members 找，若無則從 artale_history 找）
@@ -3592,25 +3678,38 @@ function dropToUnassigned(ev) {
             container.innerHTML = html;
         }
 
-        async function adminLoadAnyUserMemberData(targetIdArg) {
+async function adminLoadAnyUserMemberData(targetIdArg) {
             var targetId = targetIdArg || document.getElementById('admin-target-user-id').value.trim();
             if (!targetId || !supabaseClient) { alert('請輸入要載入的玩家 ID暱稱！'); return; }
 
-            var res = await supabaseClient.from('artale_members').select('*').eq('id', targetId).maybeSingle();
-            if (!res.data) { alert('查無此玩家【' + targetId + '】的報名資料！'); return; }
+            // 1. 先抓取全體成員名單
+            var resAll = await supabaseClient.from('artale_members').select('*');
+            if (resAll.error || !resAll.data) { alert('讀取雲端資料失敗！'); return; }
 
-            document.getElementById('user-id').value = res.data.id;
-            document.getElementById('user-pwd').value = res.data.pwd;
+            // 2. 將輸入名稱去除空白、轉小寫，進行模糊比對
+            var cleanTargetId = targetId.trim().toLowerCase();
+            var targetMember = resAll.data.find(function(m) {
+                return m.id && m.id.trim().toLowerCase() === cleanTargetId;
+            });
+
+            if (!targetMember) { 
+                alert('查無此玩家【' + targetId + '】的報名資料！'); 
+                return; 
+            }
+
+            // 3. 順利找到資料，填入表單
+            document.getElementById('user-id').value = targetMember.id;
+            document.getElementById('user-pwd').value = targetMember.pwd;
             
             document.getElementById('characters-container').innerHTML = '';
             charCounter = 0;
-            var chars = res.data.characters || [res.data];
+            var chars = targetMember.characters || [targetMember];
             for (var i = 0; i < chars.length; i++) addCharacterCard(chars[i]);
 
-            userRanges = res.data.ranges || [];
+            userRanges = targetMember.ranges || [];
             renderUserRanges();
 
-            var binds = res.data.bindings || [];
+            var binds = targetMember.bindings || [];
             for (var b = 1; b <= 3; b++) {
                 var bindObj = binds[b - 1] || {};
                 var elId = document.getElementById('bind-id-' + b);
@@ -3619,11 +3718,11 @@ function dropToUnassigned(ev) {
                 if (elType) elType.value = bindObj.contractType || '';
             }
 
-            syncUserCredentials(res.data.id, res.data.pwd);
-            updateLoginStatusUI(true, res.data.id);
+            syncUserCredentials(targetMember.id, targetMember.pwd);
+            updateLoginStatusUI(true, targetMember.id);
             switchTab('member');
-            alert('👑 管理員上帝視角：已成功載入玩家【' + res.data.id + '】的資料至修改表單！');
-        }
+            alert('👑 管理員上帝視角：已成功載入玩家【' + targetMember.id + '】的資料至修改表單！');
+        }        
 
         async function adminDeleteMemberConfirm(id) {
             if (!supabaseClient) return;
@@ -3950,22 +4049,19 @@ function dropToUnassigned(ev) {
 async function renderSchedule() {
     var areaEl = document.getElementById('full-schedule-area');
     if (!areaEl || !supabaseClient) return;
-    areaEl.innerHTML = '正在讀取本週成員總覽資料...';
+    areaEl.innerHTML = '正在讀取本週成員總覽資料...[cite: 7]';
 
     try {
-        // 💡 修正：使用 .order('id', { ascending: false }) 或預設抓取，並確保最新的在最前面
         var res = await supabaseClient.from('artale_members').select('*');
         if (res.error || !res.data || res.data.length === 0) {
-            areaEl.innerHTML = '<div style="text-align:center; color:#888; padding:20px;">目前尚無成員報名資料。</div>';
-            document.getElementById('stat-v1-text').innerText = '🔥 志願序第一的突襲：尚無資料';
-            document.getElementById('stat-v13-top1-text').innerText = '🏆 志願數最多的突襲：尚無資料';
-            document.getElementById('stat-v13-top2-text').innerText = '🥈 志願數第二多的突襲：尚無資料';
+            areaEl.innerHTML = '<div style="text-align:center; color:#888; padding:20px;">目前尚無成員報名資料。[cite: 7]</div>';
+            document.getElementById('stat-v1-text').innerText = '🔥 志願序第一的突襲：尚無資料[cite: 7]';
+            document.getElementById('stat-v13-top1-text').innerText = '🏆 志願數最多的突襲：尚無資料[cite: 7]';
+            document.getElementById('stat-v13-top2-text').innerText = '🥈 志願數第二多的突襲：尚無資料[cite: 7]';
             return;
         }
 
         var rawMembers = res.data;
-
-        // 💡 確保 Supabase 回傳的陣列順序正確：將陣列反轉，讓最後寫入/更新（最新報名）的排在最上方
         rawMembers.reverse();
 
         var checkId = document.getElementById('quick-check-id').value;
@@ -3987,6 +4083,7 @@ async function renderSchedule() {
             }
         });
 
+        // 📊 熱門統計計算
         var v1CountMap = {};
         var v13CountMap = {};
 
@@ -4022,16 +4119,60 @@ async function renderSchedule() {
         document.getElementById('stat-v13-top1-text').innerText = '🏆 志願數最多的突襲：' + rank1Text;
         document.getElementById('stat-v13-top2-text').innerText = '🥈 志願數第二多的突襲：' + rank2Text;
 
+        // 💡 定義各 Boss 發光時的代表光暈顏色變數
+       var bossGlowColors = {
+            '普拉': 'rgba(37, 99, 235, 0.65)',   // 藍色
+            '困拉': 'rgba(126, 34, 206, 0.65)',  // 紫色
+            '炎魔': 'rgba(194, 65, 12, 0.65)',   // 橙色
+            '龍王': 'rgba(51, 65, 85, 0.65)',    // 龍王黑灰石板色
+            '樹王': 'rgba(22, 163, 74, 0.65)',   // ✅ 修正：補上 rgba(
+            '蝴蝶': 'rgba(21, 128, 61, 0.65)',   // 綠色
+            '卡農': 'rgba(185, 28, 28, 0.65)'    // 紅色
+        };
 
         var html = '<div class="schedule-scroll-wrapper"><div class="schedule-grid-container">';
+        
         weekCycle.forEach(function(w) {
             var cycleKey = w.key;
+            
+            // 💡 1. 統計當天各 Boss 第一志願（v1）的「不重複玩家數」
+            var dayV1PlayerSets = {};
+            allCharEntries.forEach(function(c) {
+                var dayRanges = c.ranges.filter(function(r) { return isDateMatched(r.dateKey, cycleKey); });
+                if (dayRanges.length > 0 && c.v1) {
+                    var bossTarget = c.v1.trim();
+                    if (!dayV1PlayerSets[bossTarget]) dayV1PlayerSets[bossTarget] = new Set();
+                    dayV1PlayerSets[bossTarget].add(c.id); // 記錄玩家 ID（同玩家多角色只算 1 次）
+                }
+            });
+
+            // 💡 2. 判斷當天哪些 Boss 達到了發光門檻 (除龍王滿 5 位玩家，龍王滿 10 位玩家)
+            var glowingBosses = new Set();
+            Object.keys(dayV1PlayerSets).forEach(function(boss) {
+                var uniquePlayerCount = dayV1PlayerSets[boss].size;
+                var threshold = (boss.includes('龍王')) ? 10 : 5;
+                if (uniquePlayerCount >= threshold) {
+                    glowingBosses.add(boss);
+                }
+            });
+
             html += '<div class="schedule-day-column"><div class="schedule-day-header">' + w.label + '</div><div class="schedule-day-body">';
             
             allCharEntries.forEach(function(c) {
                 var dayRanges = c.ranges.filter(function(r) { return isDateMatched(r.dateKey, cycleKey); });
                 if (dayRanges.length > 0) {
-                    var bgClass = 'boss-' + (c.v1 || 'default');
+                    var v1Boss = (c.v1 || '').trim();
+                    var bgClass = 'boss-' + (v1Boss || 'default');
+                    
+                    // 💡 3. 檢查此角色卡片的志願 1 是否達到該 Boss 的發光標準
+                    var isGlowing = glowingBosses.has(v1Boss);
+                    var glowClass = isGlowing ? ' is-glowing' : '';
+                    var glowStyle = '';
+                    if (isGlowing) {
+                        var colorVal = bossGlowColors[v1Boss] || 'rgba(37, 99, 235, 0.65)';
+                        glowStyle = ' style="--glow-color: ' + colorVal + '; border-color: ' + colorVal.replace('0.65', '1') + ' !important;"';
+                    }
+
                     var jobColorClass = 'job-color-' + (c.job || '');
                     var timeLinesHtml = dayRanges.map(function(r){ return '<div style="margin-top:1px;">⏰ ' + r.startStr + '~' + r.endStr + '</div>'; }).join('');
                     var ticketText = (c.ticket || '') + (c.hasMW20 ? ' (🍁20)' : '');
@@ -4040,7 +4181,7 @@ async function renderSchedule() {
                     if (c.exc1) excTags += '<span class="boss-tag-exclude">❌' + c.exc1 + '</span>';
                     if (c.exc2) excTags += '<span class="boss-tag-exclude">❌' + c.exc2 + '</span>';
 
-                    html += '<div class="member-card ' + bgClass + '">' +
+                    html += '<div class="member-card ' + bgClass + glowClass + '"' + glowStyle + '>' +
                         '<div style="font-weight:bold; font-size:12px; overflow:hidden; text-overflow:ellipsis; max-width:85px;" class="' + jobColorClass + '">' + c.id + '</div>' +
                         '<div style="font-size:11px; font-weight:bold;" class="' + jobColorClass + '">' + c.job + ' Lv.' + c.level + '</div>' +
                         '<div style="font-size:9px; color:#4b5563;">' + c.style + '</div>' +
@@ -4059,9 +4200,9 @@ async function renderSchedule() {
         });
         html += '</div></div>';
         areaEl.innerHTML = html;
-renderDragonTimeOverlapAnalysis(rawMembers);
+        renderDragonTimeOverlapAnalysis(rawMembers);
     } catch (err) {
-        areaEl.innerHTML = '<div style="color:red; text-align:center;">讀取總覽資料發生錯誤：' + err.message + '</div>';
+        areaEl.innerHTML = '<div style="color:red; text-align:center;">讀取總覽資料發生錯誤：' + err.message + '[cite: 7]</div>';
     }
 }
 
@@ -4505,27 +4646,33 @@ function renderDragonTimeOverlapAnalysis(allMembers) {
     var validCycleKeys = weekCycle.map(function(w) { return w.key; });
     var dragonPlayerRanges = [];
 
-    // 1. 篩選出本週有報名、且「志願中有填龍王或ALL」的玩家與其時間
+    // 1. 篩選出本週有報名、且「志願中有填龍王或ALL」的玩家與其角色職業、時間
     allMembers.forEach(function(m) {
         var hasValidRange = (m.ranges || []).some(function(r) {
             return validCycleKeys.some(function(ck) { return isDateMatched(r.dateKey, ck); });
         });
         if (!hasValidRange || !m.characters || !Array.isArray(m.characters)) return;
 
-        var hasDragonWish = m.characters.some(function(c) {
-            if (!c || !c.job || c.job === '自訂') return false;
+        // 收集該玩家所有填寫龍王志願的的角色職業
+        var dragonJobs = [];
+        m.characters.forEach(function(c) {
+            if (!c || !c.job || c.job === '自訂') return;
             var v1 = (c.v1 || '').trim();
             var v2 = (c.v2 || '').trim();
             var v3 = (c.v3 || '').trim();
-            return (v1 === '龍王' || v2 === '龍王' || v3 === '龍王' || 
-                    v1 === 'ALL' || v2 === 'ALL' || v3 === 'ALL');
+            if (v1 === '龍王' || v2 === '龍王' || v3 === '龍王' || 
+                v1 === 'ALL' || v2 === 'ALL' || v3 === 'ALL') {
+                dragonJobs.push(c.job);
+            }
         });
 
-        if (hasDragonWish) {
+        if (dragonJobs.length > 0) {
+            var jobsStr = dragonJobs.join('or'); // 若有多隻龍王角色，組合成「拳霸or刀賊」
             m.ranges.forEach(function(r) {
                 if (validCycleKeys.some(function(ck) { return isDateMatched(r.dateKey, ck); })) {
                     dragonPlayerRanges.push({
                         userId: m.id,
+                        jobsStr: jobsStr,
                         dateLabel: r.dateLabel, // 例如 "週一 (11/16)"
                         startStr: r.startStr,     // 例如 "20:00"
                         endStr: r.endStr
@@ -4540,8 +4687,9 @@ function renderDragonTimeOverlapAnalysis(allMembers) {
         return;
     }
 
-    // 2. 以半小時為單位累加重疊人數
+    // 2. 以半小時為單位累加重疊人數，同時記錄每個時段有哪些玩家（含職業）
     var timeSlotCounts = {}; 
+    var timeSlotMembersMap = {}; 
 
     dragonPlayerRanges.forEach(function(item) {
         var startMin = timeStrToMinutesHelper(item.startStr);
@@ -4556,8 +4704,10 @@ function renderDragonTimeOverlapAnalysis(allMembers) {
 
             if (!timeSlotCounts[compositeKey]) {
                 timeSlotCounts[compositeKey] = new Set();
+                timeSlotMembersMap[compositeKey] = {};
             }
             timeSlotCounts[compositeKey].add(item.userId);
+            timeSlotMembersMap[compositeKey][item.userId] = item.jobsStr;
         }
     });
 
@@ -4573,8 +4723,8 @@ function renderDragonTimeOverlapAnalysis(allMembers) {
         return;
     }
 
-    // 4. 按「日期」分類並找出每天最早達標的時間點
-    var dayEarliestMap = {}; 
+    // 4. 找出達到最高重疊人數的各個「日期+時間點」
+    var bestSlotsMap = {}; // key: 日期標籤, value: { earliestM, timeStr, memberList }
 
     Object.keys(timeSlotCounts).forEach(function(compositeKey) {
         if (timeSlotCounts[compositeKey].size === maxCount) {
@@ -4583,38 +4733,46 @@ function renderDragonTimeOverlapAnalysis(allMembers) {
             var timeStr = parts[1];   // 例如 "20:00"
             var startM = timeStrToMinutesHelper(timeStr);
 
-            if (dayEarliestMap[dateLabel] === undefined || startM < dayEarliestMap[dateLabel]) {
-                dayEarliestMap[dateLabel] = startM;
+            if (!bestSlotsMap[dateLabel] || startM < bestSlotsMap[dateLabel].earliestM) {
+                var membersObj = timeSlotMembersMap[compositeKey];
+                var memberDetails = [];
+                Object.keys(membersObj).forEach(function(uId) {
+                    memberDetails.push(uId + '(' + membersObj[uId] + ')');
+                });
+
+                bestSlotsMap[dateLabel] = {
+                    earliestM: startM,
+                    timeStr: timeStr,
+                    memberList: memberDetails
+                };
             }
         }
     });
 
-    // 5. 💡 重新排版日期字串為：11/16(週一) 20:00 格式
-    var displaySlots = [];
-    Object.keys(dayEarliestMap).forEach(function(dateLabel) {
-        var earliestM = dayEarliestMap[dateLabel];
-        var h = Math.floor(earliestM / 60);
-        var min = earliestM % 60;
-        var timeStr = String(h).padStart(2, '0') + ':' + String(min).padStart(2, '0');
-
+    // 5. 格式化輸出排版
+    var displayLines = [];
+    Object.keys(bestSlotsMap).forEach(function(dateLabel) {
+        var slotInfo = bestSlotsMap[dateLabel];
+        
         // 解析 "週一 (11/16)" -> 轉成 "11/16(週一)"
         var match = dateLabel.match(/(週[一二三四五六日])\s*\((\d{1,2}\/\d{1,2})\)/);
-        var formattedDate = dateLabel; // 預設保留原樣防呆
+        var formattedDate = dateLabel;
         if (match) {
-            var weekday = match[1]; // "週一"
-            var dateStr = match[2]; // "11/16"
+            var weekday = match[1];
+            var dateStr = match[2];
             formattedDate = dateStr + '(' + weekday + ')';
         }
 
-        displaySlots.push(formattedDate + ' ' + timeStr);
+        var timeFullStr = formattedDate + ' ' + slotInfo.timeStr;
+        var membersStr = slotInfo.memberList.join('  ');
+        
+        displayLines.push('• <b>' + timeFullStr + '</b> > ' + membersStr);
     });
 
-    displaySlots.sort();
-
-    var html = '🔥 共 <b>' + maxCount + ' 位</b> 龍王志願最多重疊之時段：<br>';
-    html += '<span style="color: #0f172a; font-weight: 900; background: #ffffff; padding: 5px 10px; border-radius: 6px; border: 1.5px solid #64748b; display: inline-block; margin-top: 6px; line-height: 1.6; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">';
-    html += displaySlots.join('  |  ');
-    html += '</span>';
+    var html = '🔥 龍王志願最多重疊之時段（共 ' + maxCount + ' 位玩家重疊）：<br>';
+    html += '<div style="color: #0f172a; font-weight: 500; background: #ffffff; padding: 8px 12px; border-radius: 6px; border: 1.5px solid #64748b; margin-top: 6px; line-height: 1.8; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">';
+    html += displayLines.join('<br>');
+    html += '</div>';
 
     analysisEl.innerHTML = html;
 }
