@@ -4653,7 +4653,6 @@ function renderDragonTimeOverlapAnalysis(allMembers) {
         });
         if (!hasValidRange || !m.characters || !Array.isArray(m.characters)) return;
 
-        // 收集該玩家所有填寫龍王志願的的角色職業
         var dragonJobs = [];
         m.characters.forEach(function(c) {
             if (!c || !c.job || c.job === '自訂') return;
@@ -4667,14 +4666,14 @@ function renderDragonTimeOverlapAnalysis(allMembers) {
         });
 
         if (dragonJobs.length > 0) {
-            var jobsStr = dragonJobs.join('or'); // 若有多隻龍王角色，組合成「拳霸or刀賊」
+            var jobsStr = dragonJobs.join('or');
             m.ranges.forEach(function(r) {
                 if (validCycleKeys.some(function(ck) { return isDateMatched(r.dateKey, ck); })) {
                     dragonPlayerRanges.push({
                         userId: m.id,
                         jobsStr: jobsStr,
-                        dateLabel: r.dateLabel, // 例如 "週一 (11/16)"
-                        startStr: r.startStr,     // 例如 "20:00"
+                        dateLabel: r.dateLabel,
+                        startStr: r.startStr,
                         endStr: r.endStr
                     });
                 }
@@ -4687,7 +4686,7 @@ function renderDragonTimeOverlapAnalysis(allMembers) {
         return;
     }
 
-    // 2. 以半小時為單位累加重疊人數，同時記錄每個時段有哪些玩家（含職業）
+    // 2. 以半小時為單位累加重疊人數，同時記錄每個時段有哪些玩家（含詳細起訖時間）
     var timeSlotCounts = {}; 
     var timeSlotMembersMap = {}; 
 
@@ -4707,7 +4706,11 @@ function renderDragonTimeOverlapAnalysis(allMembers) {
                 timeSlotMembersMap[compositeKey] = {};
             }
             timeSlotCounts[compositeKey].add(item.userId);
-            timeSlotMembersMap[compositeKey][item.userId] = item.jobsStr;
+            timeSlotMembersMap[compositeKey][item.userId] = {
+                jobsStr: item.jobsStr,
+                rangeStart: item.startStr,
+                rangeEnd: item.endStr
+            };
         }
     });
 
@@ -4724,37 +4727,32 @@ function renderDragonTimeOverlapAnalysis(allMembers) {
     }
 
     // 4. 找出達到最高重疊人數的各個「日期+時間點」
-    var bestSlotsMap = {}; // key: 日期標籤, value: { earliestM, timeStr, memberList }
+    var bestSlotsMap = {}; 
 
     Object.keys(timeSlotCounts).forEach(function(compositeKey) {
         if (timeSlotCounts[compositeKey].size === maxCount) {
             var parts = compositeKey.split('@');
-            var dateLabel = parts[0]; // 例如 "週一 (11/16)"
-            var timeStr = parts[1];   // 例如 "20:00"
+            var dateLabel = parts[0]; 
+            var timeStr = parts[1];   
             var startM = timeStrToMinutesHelper(timeStr);
 
             if (!bestSlotsMap[dateLabel] || startM < bestSlotsMap[dateLabel].earliestM) {
-                var membersObj = timeSlotMembersMap[compositeKey];
-                var memberDetails = [];
-                Object.keys(membersObj).forEach(function(uId) {
-                    memberDetails.push(uId + '(' + membersObj[uId] + ')');
-                });
-
                 bestSlotsMap[dateLabel] = {
                     earliestM: startM,
                     timeStr: timeStr,
-                    memberList: memberDetails
+                    membersObj: timeSlotMembersMap[compositeKey]
                 };
             }
         }
     });
 
-    // 5. 格式化輸出排版
+    // 5. 格式化輸出排版（檢查 2 小時極限：開打時間 + 120 分鐘）
     var displayLines = [];
     Object.keys(bestSlotsMap).forEach(function(dateLabel) {
         var slotInfo = bestSlotsMap[dateLabel];
-        
-        // 解析 "週一 (11/16)" -> 轉成 "11/16(週一)"
+        var raidStartM = slotInfo.earliestM;
+        var raidEndM = raidStartM + 120; // 龍王預計 2 小時 (120分鐘)
+
         var match = dateLabel.match(/(週[一二三四五六日])\s*\((\d{1,2}\/\d{1,2})\)/);
         var formattedDate = dateLabel;
         if (match) {
@@ -4764,12 +4762,35 @@ function renderDragonTimeOverlapAnalysis(allMembers) {
         }
 
         var timeFullStr = formattedDate + ' ' + slotInfo.timeStr;
-        var membersStr = slotInfo.memberList.join('  ');
+        var membersObj = slotInfo.membersObj;
+        var memberDetails = [];
+        var slotHasExceeded = false;
+
+        Object.keys(membersObj).forEach(function(uId) {
+            var info = membersObj[uId];
+            var playerEndM = timeStrToMinutesHelper(info.rangeEnd);
+            
+            // 如果玩家的最晚結束時間早於「開打 + 2小時」的結束時間，代表時間超過/不足
+            var isExceeded = playerEndM < raidEndM;
+            if (isExceeded) {
+                slotHasExceeded = true;
+                memberDetails.push('<span style="color: #990000; font-weight: bold;">' + uId + '(' + info.jobsStr + ')</span>');
+            } else {
+                memberDetails.push(uId + '(' + info.jobsStr + ')');
+            }
+        });
+
+        var membersStr = memberDetails.join('  ');
         
-        displayLines.push('• <b>' + timeFullStr + '</b> > ' + membersStr);
+        if (slotHasExceeded) {
+            var warningLabel = '<span style="color: #990000; font-weight: bold;">(有玩家可能超過最晚可打時間)</span>';
+            displayLines.push('• <span style="color: #990000; font-weight: bold;">' + timeFullStr + ' ' + warningLabel + '</span> > ' + membersStr);
+        } else {
+            displayLines.push('• <b>' + timeFullStr + '</b> > ' + membersStr);
+        }
     });
 
-    var html = '🔥 龍王志願最多重疊之時段（共 ' + maxCount + ' 位玩家重疊）：<br>';
+    var html = '🔥 龍王志願最多重疊之時段（共 ' + maxCount + ' 位玩家重疊，每場預計 2 小時）：<br>';
     html += '<div style="color: #0f172a; font-weight: 500; background: #ffffff; padding: 8px 12px; border-radius: 6px; border: 1.5px solid #64748b; margin-top: 6px; line-height: 1.8; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">';
     html += displayLines.join('<br>');
     html += '</div>';
