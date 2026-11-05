@@ -1039,25 +1039,26 @@ async function fetchOnlineUsersList() {
     try {
         var res = null;
         if (supabaseClient) {
-            res = await supabaseClient.from('artale_members').select('id, characters, ranges');
+            // 💡 加上 .order('updated_at', { ascending: false }) 讓清單依更新時間由新到舊排序
+            res = await supabaseClient
+                .from('artale_members')
+                .select('id, characters, ranges, updated_at')
+                .order('updated_at', { ascending: false });
         }
         var activeNames = [];
         var inactiveNames = [];
-        var dragonWishedList = []; // 💡 儲存龍王志願玩家與職業
+        var dragonWishedList = []; 
 
         if (res && res.data) {
             res.data.forEach(function(m) {
                 var hasTime = m.ranges && Array.isArray(m.ranges) && m.ranges.length > 0;
-                
-                // 判斷是否有設定正式職業（排除空值或「自訂」）
                 var hasValidChar = m.characters && Array.isArray(m.characters) && m.characters.length > 0 && 
                                    m.characters[0].job && m.characters[0].job !== '自訂';
                 
                 if (m.id && hasValidChar) {
                     if (hasTime) {
-                        activeNames.push(m.id); // 已報名成功（綠燈區）
+                        activeNames.push(m.id); 
 
-                        // 🐲 檢查此玩家底下是否有角色將「龍王」或「ALL」放入志願 1, 2, 3
                         var dragonJobs = [];
                         m.characters.forEach(function(c) {
                             if (!c || !c.job || c.job === '自訂') return;
@@ -1076,24 +1077,23 @@ async function fetchOnlineUsersList() {
                         if (dragonJobs.length > 0) {
                             dragonWishedList.push({
                                 userId: m.id,
-                                jobsText: dragonJobs.join('/') // 多角色出戰時顯示為「職業1/職業2」
+                                jobsText: dragonJobs.join('/')
                             });
                         }
 
                     } else {
-                        inactiveNames.push(m.id); // 有帳號但沒填時間（灰燈區）
+                        inactiveNames.push(m.id); 
                     }
                 }
             });
         }
 
-        // Set 雙重過濾，確保綠燈區與灰燈區不重複
         var activeSet = new Set(activeNames);
         var filteredInactiveNames = inactiveNames.filter(function(name) {
             return !activeSet.has(name);
         });
 
-        // 1. 渲染本週報名成功玩家
+        // 1. 渲染本週報名成功玩家（已依 updated_at 排序）
         var activeEl = document.getElementById('online-users-list');
         if (activeEl) {
             if (activeNames.length === 0) {
@@ -1117,7 +1117,7 @@ async function fetchOnlineUsersList() {
             }
         }
 
-        // 3. 💡 渲染本週龍王志願玩家清單（含職業）
+        // 3. 渲染本週龍王志願玩家清單
         var dragonEl = document.getElementById('dragon-wished-users-list');
         if (dragonEl) {
             if (dragonWishedList.length === 0) {
@@ -3897,7 +3897,13 @@ async function adminLoadAnyUserMemberData(targetIdArg) {
                 }
 
                 var historyRecord = res.data[0];
-                var rawMembers = historyRecord.members_data || [];
+var rawMembers = historyRecord.members_data || [];
+// 依 updated_at 由新到舊排序
+rawMembers.sort(function(a, b) {
+    var tA = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+    var tB = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+    return tB - tA;
+});
                 currentHistoryMembersData = rawMembers;
 
                 var checkId = document.getElementById('history-check-id').value;
@@ -4049,20 +4055,25 @@ async function adminLoadAnyUserMemberData(targetIdArg) {
 async function renderSchedule() {
     var areaEl = document.getElementById('full-schedule-area');
     if (!areaEl || !supabaseClient) return;
-    areaEl.innerHTML = '正在讀取本週成員總覽資料...[cite: 7]';
+    areaEl.innerHTML = '正在讀取本週成員總覽資料...';
 
     try {
-        var res = await supabaseClient.from('artale_members').select('*');
+        // 💡 加上 .order('updated_at', { ascending: false }) 讓最新更新的排在最前面
+        var res = await supabaseClient
+            .from('artale_members')
+            .select('*')
+            .order('updated_at', { ascending: false });
+
         if (res.error || !res.data || res.data.length === 0) {
-            areaEl.innerHTML = '<div style="text-align:center; color:#888; padding:20px;">目前尚無成員報名資料。[cite: 7]</div>';
-            document.getElementById('stat-v1-text').innerText = '🔥 志願序第一的突襲：尚無資料[cite: 7]';
-            document.getElementById('stat-v13-top1-text').innerText = '🏆 志願數最多的突襲：尚無資料[cite: 7]';
-            document.getElementById('stat-v13-top2-text').innerText = '🥈 志願數第二多的突襲：尚無資料[cite: 7]';
+            areaEl.innerHTML = '<div style="text-align:center; color:#888; padding:20px;">目前尚無成員報名資料。</div>';
+            document.getElementById('stat-v1-text').innerText = '🔥 志願序第一的突襲：尚無資料';
+            document.getElementById('stat-v13-top1-text').innerText = '🏆 志願數最多的突襲：尚無資料';
+            document.getElementById('stat-v13-top2-text').innerText = '🥈 志願數第二多的突襲：尚無資料';
             return;
         }
 
         var rawMembers = res.data;
-        rawMembers.reverse();
+        // 移除原本的 rawMembers.reverse(); 因為資料庫已經透過 updated_at 由新到舊排好序了！[cite: 1]
 
         var checkId = document.getElementById('quick-check-id').value;
         if (checkId) renderMyBookingSummary(checkId);
@@ -4119,15 +4130,14 @@ async function renderSchedule() {
         document.getElementById('stat-v13-top1-text').innerText = '🏆 志願數最多的突襲：' + rank1Text;
         document.getElementById('stat-v13-top2-text').innerText = '🥈 志願數第二多的突襲：' + rank2Text;
 
-        // 💡 定義各 Boss 發光時的代表光暈顏色變數
-       var bossGlowColors = {
-            '普拉': 'rgba(37, 99, 235, 0.65)',   // 藍色
-            '困拉': 'rgba(126, 34, 206, 0.65)',  // 紫色
-            '炎魔': 'rgba(194, 65, 12, 0.65)',   // 橙色
-            '龍王': 'rgba(51, 65, 85, 0.65)',    // 龍王黑灰石板色
-            '樹王': 'rgba(22, 163, 74, 0.65)',   // ✅ 修正：補上 rgba(
-            '蝴蝶': 'rgba(21, 128, 61, 0.65)',   // 綠色
-            '卡農': 'rgba(185, 28, 28, 0.65)'    // 紅色
+        var bossGlowColors = {
+            '普拉': 'rgba(37, 99, 235, 0.65)',
+            '困拉': 'rgba(126, 34, 206, 0.65)',
+            '炎魔': 'rgba(194, 65, 12, 0.65)',
+            '龍王': 'rgba(51, 65, 85, 0.65)',
+            '樹王': 'rgba(22, 163, 74, 0.65)',
+            '蝴蝶': 'rgba(21, 128, 61, 0.65)',
+            '卡農': 'rgba(185, 28, 28, 0.65)'
         };
 
         var html = '<div class="schedule-scroll-wrapper"><div class="schedule-grid-container">';
@@ -4135,18 +4145,16 @@ async function renderSchedule() {
         weekCycle.forEach(function(w) {
             var cycleKey = w.key;
             
-            // 💡 1. 統計當天各 Boss 第一志願（v1）的「不重複玩家數」
             var dayV1PlayerSets = {};
             allCharEntries.forEach(function(c) {
                 var dayRanges = c.ranges.filter(function(r) { return isDateMatched(r.dateKey, cycleKey); });
                 if (dayRanges.length > 0 && c.v1) {
                     var bossTarget = c.v1.trim();
                     if (!dayV1PlayerSets[bossTarget]) dayV1PlayerSets[bossTarget] = new Set();
-                    dayV1PlayerSets[bossTarget].add(c.id); // 記錄玩家 ID（同玩家多角色只算 1 次）
+                    dayV1PlayerSets[bossTarget].add(c.id);
                 }
             });
 
-            // 💡 2. 判斷當天哪些 Boss 達到了發光門檻 (除龍王滿 5 位玩家，龍王滿 10 位玩家)
             var glowingBosses = new Set();
             Object.keys(dayV1PlayerSets).forEach(function(boss) {
                 var uniquePlayerCount = dayV1PlayerSets[boss].size;
@@ -4164,7 +4172,6 @@ async function renderSchedule() {
                     var v1Boss = (c.v1 || '').trim();
                     var bgClass = 'boss-' + (v1Boss || 'default');
                     
-                    // 💡 3. 檢查此角色卡片的志願 1 是否達到該 Boss 的發光標準
                     var isGlowing = glowingBosses.has(v1Boss);
                     var glowClass = isGlowing ? ' is-glowing' : '';
                     var glowStyle = '';
@@ -4202,7 +4209,7 @@ async function renderSchedule() {
         areaEl.innerHTML = html;
         renderDragonTimeOverlapAnalysis(rawMembers);
     } catch (err) {
-        areaEl.innerHTML = '<div style="color:red; text-align:center;">讀取總覽資料發生錯誤：' + err.message + '[cite: 7]</div>';
+        areaEl.innerHTML = '<div style="color:red; text-align:center;">讀取總覽資料發生錯誤：' + err.message + '</div>';
     }
 }
 
