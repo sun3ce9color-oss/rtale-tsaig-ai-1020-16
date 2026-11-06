@@ -339,11 +339,11 @@
         <div class="nav-btns">
             <button type="button" id="nav-btn-member" onclick="switchTab('member')" class="btn btn-tab-member active">✍️ 突襲王報名區</button>
             <button type="button" id="nav-btn-schedule" onclick="switchTab('schedule')" class="btn btn-tab-schedule">📅 報名概況總表</button>
-            <button type="button" id="nav-btn-shift" onclick="switchTab('shift')" class="btn btn-tab-shift">🤖 排班破爛系統</button>
             <button type="button" id="nav-btn-schedule-pub" onclick="switchTab('schedule-pub')" class="btn btn-tab-schedule-pub">📢 突襲班表公佈</button>
-            <button type="button" id="nav-btn-board" onclick="switchTab('board')" class="btn btn-tab-board">💬 菜G留言板</button>
-            <button type="button" id="nav-btn-history" onclick="switchTab('history')" class="btn btn-tab-history">📜 歷史G錄</button>
-            <button type="button" id="nav-btn-admin" onclick="switchTab('admin')" class="btn btn-tab-admin">👑 管理員</button>
+            <button type="button" id="nav-btn-board" onclick="switchTab('board')" class="btn btn-tab-board">💬 七嘴八舌天地</button>
+            <button type="button" id="nav-btn-shift" onclick="switchTab('shift')" class="btn btn-tab-shift">🤖 破破排班系統</button>
+            <button type="button" id="nav-btn-history" onclick="switchTab('history')" class="btn btn-tab-history">📜 歷史檔案紀錄</button>
+            <button type="button" id="nav-btn-admin" onclick="switchTab('admin')" class="btn btn-tab-admin">👑 小精靈工作坊</button>
         </div>
 
         <div id="tab-member">
@@ -1618,7 +1618,7 @@ async function handleCancelWeeklyBookingOnly() {
             }
         }
 
-       function syncBossOptionsForCard(cardBox, changedSelect) {
+function syncBossOptionsForCard(cardBox, changedSelect) {
     if (!cardBox) return;
     
     var v1 = cardBox.querySelector('.c-v1');
@@ -1628,23 +1628,13 @@ async function handleCancelWeeklyBookingOnly() {
     var exc2 = cardBox.querySelector('.c-exc2');
     var selects = [v1, v2, v3, exc1, exc2].filter(Boolean);
 
-    // 💡 當你選擇某個 Boss 時，如果其他選單已經選了它，就把舊的那個清空重置
-    if (changedSelect && changedSelect.value && changedSelect.value !== 'ALL') {
-        var currentVal = changedSelect.value;
-        selects.forEach(function(otherSelect) {
-            if (otherSelect !== changedSelect && otherSelect.value === currentVal) {
-                otherSelect.value = '';
-            }
-        });
-    }
-
-    // 💡 移除原本的 opt.disabled 反灰限制，讓所有選項都可以直接點選！
+    // 確保所有選單選項皆為可用狀態，避免反灰無法點選
     selects.forEach(function(currentSelect) {
         Array.from(currentSelect.options).forEach(function(opt) {
             opt.disabled = false;
         });
     });
-}
+}     
 
         function addCharacterCard(data) {
             data = data || null;
@@ -1808,8 +1798,20 @@ var res = { data: matchedRecord };
 
             document.getElementById('characters-container').innerHTML = '';
             charCounter = 0;
-            var chars = res.data.characters || [res.data];
-            for (var i = 0; i < chars.length; i++) addCharacterCard(chars[i]);
+            
+            // 確保 chars 絕對是有效的陣列結構
+            var chars = [];
+            if (res.data.characters && Array.isArray(res.data.characters)) {
+                chars = res.data.characters;
+            } else if (res.data.job) {
+                chars = [res.data]; // 舊版相容
+            } else {
+                chars = [{ job: '', level: '120', style: '', ticket: '', hasMW20: false, v1: '' }];
+            }
+
+            for (var i = 0; i < chars.length; i++) {
+                addCharacterCard(chars[i]);
+            }
             
             var rawRanges = res.data.ranges || [];
             var validCycleKeys = weekCycle.map(function(w) { return w.key; });
@@ -3626,6 +3628,8 @@ function dropToUnassigned(ev) {
             if (draggedUnassignedIndex !== null) {
                 var selected = unassignedCandidatesState.splice(draggedUnassignedIndex, 1)[0];
                 if (selected) {
+                    // 賦予全新的 uniqueKey 避免拖曳時 DOM 衝突
+                    selected.uniqueKey = 'dragged-' + Date.now() + '-' + Math.random();
                     if (targetTeam.members[targetMIdx]) {
                         var oldM = targetTeam.members[targetMIdx];
                         targetTeam.members[targetMIdx] = selected;
@@ -3635,7 +3639,7 @@ function dropToUnassigned(ev) {
                     }
                 }
                 draggedUnassignedIndex = null;
-            } 
+            }
             // 狀況 B：從「隊伍中」拖到另一隊的成員身上（進行兩者互換 Swap）
             else if (draggedTeamMemberInfo !== null) {
                 var sourceTeam = interactiveTeamsState.find(function(t){ return t.id === draggedTeamMemberInfo.teamId; });
