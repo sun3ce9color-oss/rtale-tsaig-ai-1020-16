@@ -500,6 +500,36 @@
             <div style="font-size:11.5px; margin-bottom:8px; line-height:1.6; color:#374151;">
                 ✨ <b>滿額發光標示：</b>當多位玩家當日志願符合時邊框會發亮。
             </div>
+
+            <!-- 🔍 新增副本與志願篩選控制區 -->
+            <div id="schedule-filter-bar" style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+                <div style="display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between;">
+                    
+                    <!-- 1. 副本選擇按鈕群 -->
+                    <div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+                        <span style="font-size: 12px; font-weight: bold; color: #475569; margin-right: 4px;">🎯 副本顯示：</span>
+                        <button type="button" class="btn filter-boss-btn active" onclick="setScheduleBossFilter('ALL')" style="font-size: 11.5px; padding: 3px 9px; border-radius: 12px; background: #2563eb; color: white;">全部顯示</button>
+                        <button type="button" class="btn filter-boss-btn" onclick="setScheduleBossFilter('普拉')" style="font-size: 11.5px; padding: 3px 9px; border-radius: 12px; background: #f1f5f9; color: #1d4ed8; border: 1px solid #bfdbfe;">普拉</button>
+                        <button type="button" class="btn filter-boss-btn" onclick="setScheduleBossFilter('困拉')" style="font-size: 11.5px; padding: 3px 9px; border-radius: 12px; background: #f1f5f9; color: #6b21a8; border: 1px solid #e9d5ff;">困拉</button>
+                        <button type="button" class="btn filter-boss-btn" onclick="setScheduleBossFilter('炎魔')" style="font-size: 11.5px; padding: 3px 9px; border-radius: 12px; background: #f1f5f9; color: #c2410c; border: 1px solid #fed7aa;">炎魔</button>
+                        <button type="button" class="btn filter-boss-btn" onclick="setScheduleBossFilter('龍王')" style="font-size: 11.5px; padding: 3px 9px; border-radius: 12px; background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1;">龍王</button>
+                        <button type="button" class="btn filter-boss-btn" onclick="setScheduleBossFilter('樹王')" style="font-size: 11.5px; padding: 3px 9px; border-radius: 12px; background: #f1f5f9; color: #16a34a; border: 1px solid #bbf7d0;">樹王</button>
+                        <button type="button" class="btn filter-boss-btn" onclick="setScheduleBossFilter('蝴蝶')" style="font-size: 11.5px; padding: 3px 9px; border-radius: 12px; background: #f1f5f9; color: #15803d; border: 1px solid #bbf7d0;">蝴蝶</button>
+                        <button type="button" class="btn filter-boss-btn" onclick="setScheduleBossFilter('卡農')" style="font-size: 11.5px; padding: 3px 9px; border-radius: 12px; background: #f1f5f9; color: #b91c1c; border: 1px solid #fca5a5;">卡農</button>
+                    </div>
+
+                    <!-- 2. 志願層級切換按鈕群 -->
+                    <!-- 2. 志願層級切換按鈕群 -->
+<div style="display: flex; gap: 4px; align-items: center;">
+    <span style="font-size: 12px; font-weight: bold; color: #475569; margin-right: 4px;">📝 志願範圍：</span>
+    <button type="button" class="btn filter-wish-btn active" id="btn-wish-v13" onclick="setScheduleWishFilter('V13')" style="font-size: 11.5px; padding: 3px 9px; border-radius: 12px; background: #0d9488; color: white;">志願1~3全部</button>
+    <button type="button" class="btn filter-wish-btn" id="btn-wish-v12" onclick="setScheduleWishFilter('V12')" style="font-size: 11.5px; padding: 3px 9px; border-radius: 12px; background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1;">僅顯示志願1&2</button>
+    <button type="button" class="btn filter-wish-btn" id="btn-wish-v1" onclick="setScheduleWishFilter('V1')" style="font-size: 11.5px; padding: 3px 9px; border-radius: 12px; background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1;">僅顯示志願1</button>
+</div>
+
+                </div>
+            </div>
+
             <div id="full-schedule-area"></div>
         </div>
 
@@ -683,6 +713,34 @@
                 <div id="hist-stat-v1-text">🔥 志願序第一的突襲：尚無資料</div>
                 <div id="hist-stat-v13-top1-text">🏆 志願數最多的突襲：尚無資料</div>
                 <div id="hist-stat-v13-top2-text">🥈 志願數第二多的突襲：尚無資料</div>
+            </div>
+
+<!-- 🔍 歷史紀錄專屬副本與志願篩選控制區 -->
+            <div id="history-filter-bar" style="background: #ffffff; border: 1.5px solid #fca5a5; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; margin-top: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+                <div style="display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between;">
+                    
+                    <!-- 1. 副本選擇按鈕群 -->
+                    <div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+                        <span style="font-size: 12px; font-weight: bold; color: #991b1b; margin-right: 4px;">🎯 副本顯示：</span>
+                        <button type="button" class="btn hist-filter-boss-btn active" onclick="setHistoryBossFilter('ALL')" style="font-size: 11.5px; padding: 3px 9px; border-radius: 12px; background: #991b1b; color: white;">全部顯示</button>
+                        <button type="button" class="btn hist-filter-boss-btn" onclick="setHistoryBossFilter('普拉')" style="font-size: 11.5px; padding: 3px 9px; border-radius: 12px; background: #fef2f2; color: #1d4ed8; border: 1px solid #93c5fd;">普拉</button>
+                        <button type="button" class="btn hist-filter-boss-btn" onclick="setHistoryBossFilter('困拉')" style="font-size: 11.5px; padding: 3px 9px; border-radius: 12px; background: #fef2f2; color: #6b21a8; border: 1px solid #e9d5ff;">困拉</button>
+                        <button type="button" class="btn hist-filter-boss-btn" onclick="setHistoryBossFilter('炎魔')" style="font-size: 11.5px; padding: 3px 9px; border-radius: 12px; background: #fef2f2; color: #c2410c; border: 1px solid #fed7aa;">炎魔</button>
+                        <button type="button" class="btn hist-filter-boss-btn" onclick="setHistoryBossFilter('龍王')" style="font-size: 11.5px; padding: 3px 9px; border-radius: 12px; background: #fef2f2; color: #334155; border: 1px solid #cbd5e1;">龍王</button>
+                        <button type="button" class="btn hist-filter-boss-btn" onclick="setHistoryBossFilter('樹王')" style="font-size: 11.5px; padding: 3px 9px; border-radius: 12px; background: #fef2f2; color: #16a34a; border: 1px solid #bbf7d0;">樹王</button>
+                        <button type="button" class="btn hist-filter-boss-btn" onclick="setHistoryBossFilter('蝴蝶')" style="font-size: 11.5px; padding: 3px 9px; border-radius: 12px; background: #fef2f2; color: #15803d; border: 1px solid #bbf7d0;">蝴蝶</button>
+                        <button type="button" class="btn hist-filter-boss-btn" onclick="setHistoryBossFilter('卡農')" style="font-size: 11.5px; padding: 3px 9px; border-radius: 12px; background: #fef2f2; color: #b91c1c; border: 1px solid #fca5a5;">卡農</button>
+                    </div>
+
+                    <!-- 2. 志願層級切換按鈕群 -->
+                    <div style="display: flex; gap: 4px; align-items: center;">
+                        <span style="font-size: 12px; font-weight: bold; color: #991b1b; margin-right: 4px;">📝 志願範圍：</span>
+                        <button type="button" class="btn hist-filter-wish-btn active" id="hist-btn-wish-v13" onclick="setHistoryWishFilter('V13')" style="font-size: 11.5px; padding: 3px 9px; border-radius: 12px; background: #991b1b; color: white;">志願1~3全部</button>
+                        <button type="button" class="btn hist-filter-wish-btn" id="hist-btn-wish-v12" onclick="setHistoryWishFilter('V12')" style="font-size: 11.5px; padding: 3px 9px; border-radius: 12px; background: #fef2f2; color: #334155; border: 1px solid #fca5a5;">僅顯示志願1&2</button>
+                        <button type="button" class="btn hist-filter-wish-btn" id="hist-btn-wish-v1" onclick="setHistoryWishFilter('V1')" style="font-size: 11.5px; padding: 3px 9px; border-radius: 12px; background: #fef2f2; color: #334155; border: 1px solid #fca5a5;">僅顯示志願1</button>
+                    </div>
+
+                </div>
             </div>
 
             <div id="history-schedule-area" style="overflow-x:auto; margin-top:10px;"></div>
@@ -1031,6 +1089,10 @@ async function checkAndExecuteAutoArchiving(now, targetDeadline) {
                 initDeadlineCountdown();
                 fetchOnlineUsersList();
                 setInterval(fetchOnlineUsersList, 10000);
+// 網頁啟動時順便預先載入排班未排入池
+setTimeout(function() {
+    autoInitShiftUnassignedPool();
+}, 1000);
             } catch(e) {
                 console.error("initApp error:", e);
             }
@@ -1977,7 +2039,10 @@ var res = { data: matchedRecord };
             document.getElementById('tab-member').classList.toggle('hidden', tab !== 'member');
             document.getElementById('tab-schedule').classList.toggle('hidden', tab !== 'schedule');
             document.getElementById('tab-shift').classList.toggle('hidden', tab !== 'shift');
-            
+if (tab === 'shift') {
+    autoInitShiftUnassignedPool(); // 🤖 切換到排班系統時自動載入未排入角色池
+}
+          
             var pubTab = document.getElementById('tab-schedule-pub');
             if (pubTab) pubTab.classList.toggle('hidden', tab !== 'schedule-pub');
 
@@ -3012,16 +3077,95 @@ function renderHistoryInteractiveShiftArea(teams) {
             }
         }
 
-        function editHistoryTeamTimeInline(teamId) {
-            var targetTeam = historyInteractiveTeamsState.find(function(t){ return t.id === teamId; });
-            if (!targetTeam) return;
-            var dateInput = prompt("請輸入日期 (例如: 10/27)：");
-            if (dateInput === null || dateInput.trim() === '') return;
-            var timeInput = prompt("請輸入時間 (例如: 20:00)：");
-            if (timeInput === null || timeInput.trim() === '') return;
-            targetTeam.fullTimeStr = autoFormatDateWithWeekday(dateInput.trim() + ' ' + timeInput.trim());
+        // ⏱️ 專門用來修改歷史班表隊伍時間的智慧彈窗
+function editHistoryTeamTimeInline(teamId) {
+    var targetTeam = historyInteractiveTeamsState.find(function(t){ return t.id === teamId; });
+    if (!targetTeam) return;
+
+    var modalContainer = document.getElementById('custom-modal-container');
+    if (!modalContainer) return;
+
+    var dateOptionsHtml = '';
+    if (typeof currentHistoryWeekCycleDates !== 'undefined' && currentHistoryWeekCycleDates.length > 0) {
+        currentHistoryWeekCycleDates.forEach(function(w) {
+            dateOptionsHtml += '<option value="' + w.key + '">' + w.label + '</option>';
+        });
+    }
+
+    var timeOptionsHtml = '';
+    for (var h = 0; h < 24; h++) {
+        for (var m = 0; m < 60; m += 30) {
+            var hh = String(h).padStart(2, '0');
+            var mm = String(m).padStart(2, '0');
+            var timeStr = hh + ':' + mm;
+            timeOptionsHtml += '<option value="' + timeStr + '">' + timeStr + '</option>';
+        }
+    }
+
+    modalContainer.innerHTML = 
+        '<div class="custom-modal-overlay" onclick="closeCustomModal()">' +
+            '<div class="custom-modal-box" onclick="event.stopPropagation()">' +
+                '<h3 style="margin-top:0; color:#991b1b;">⏱️ 修改歷史隊伍時間</h3>' +
+                
+                '<div style="margin-bottom:12px;">' +
+                    '<label>📅 日期選擇 (可下拉或直接盲打 1110)：</label>' +
+                    '<div style="display:flex; gap:6px;">' +
+                        '<select id="inline-time-date-select" style="flex:1;" onchange="document.getElementById(\'inline-time-date-input\').value=this.value;">' + dateOptionsHtml + '</select>' +
+                        '<input type="text" id="inline-time-date-input" placeholder="例: 1110" style="width:90px;" oninput="formatInlineDateInput(this)">' +
+                    '</div>' +
+                '</div>' +
+
+                '<div style="margin-bottom:16px;">' +
+                    '<label>⏰ 時間選擇 (可下拉或直接盲打 2030)：</label>' +
+                    '<div style="display:flex; gap:6px;">' +
+                        '<select id="inline-time-time-select" style="flex:1;" onchange="document.getElementById(\'inline-time-time-input\').value=this.value;">' + timeOptionsHtml + '</select>' +
+                        '<input type="text" id="inline-time-time-input" placeholder="例: 2030" style="width:90px;" oninput="formatInlineTimeInput(this)">' +
+                    '</div>' +
+                '</div>' +
+
+                '<div style="display:flex; gap:10px;">' +
+                    '<button class="btn btn-red" style="flex:1;" onclick="confirmEditTeamTime(\'' + teamId + '\', true)">確認修改</button>' +
+                    '<button class="btn btn-gray" style="flex:1;" onclick="closeCustomModal()">取消</button>' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+
+    modalContainer.classList.remove('hidden');
+}
+
+// 💾 確認更新隊伍時間
+function confirmEditTeamTime(teamId, isHistory) {
+    var dateVal = document.getElementById('inline-time-date-input').value.trim();
+    var timeVal = document.getElementById('inline-time-time-input').value.trim();
+
+    if (!dateVal || !timeVal) {
+        alert('請完整填寫日期與時間！');
+        return;
+    }
+
+    var cycleRef = isHistory ? currentHistoryWeekCycleDates : weekCycle;
+    var matchedWeek = cycleRef ? cycleRef.find(function(w) { return isDateMatched(w.key, dateVal); }) : null;
+    var weekdayStr = matchedWeek ? matchedWeek.label.split(' ')[0] : '週二';
+    
+    var finalTitleStr = dateVal + ' (' + weekdayStr + ') ' + timeVal;
+    var formattedFullStr = autoFormatDateWithWeekday(finalTitleStr);
+
+    if (isHistory) {
+        var targetTeam = historyInteractiveTeamsState.find(function(t){ return t.id === teamId; });
+        if (targetTeam) {
+            targetTeam.fullTimeStr = formattedFullStr;
             renderHistoryInteractiveShiftArea(historyInteractiveTeamsState);
         }
+    } else {
+        var targetTeam = interactiveTeamsState.find(function(t){ return t.id === teamId; });
+        if (targetTeam) {
+            targetTeam.fullTimeStr = formattedFullStr;
+            renderAreaACards(interactiveTeamsState);
+            renderInteractiveShiftArea(interactiveTeamsState);
+        }
+    }
+    closeCustomModal();
+}
 
         function editHistoryJobLevelInline(ev, teamId, mIdx) {
             ev.stopPropagation();
@@ -3317,17 +3461,83 @@ function renderHistoryInteractiveShiftArea(teams) {
             }
         }
 
-        function editTeamTimeInline(teamId) {
-            var targetTeam = interactiveTeamsState.find(function(t){ return t.id === teamId; });
-            if (!targetTeam) return;
-            var dateInput = prompt("請輸入日期 (例如: 11/03)：");
-            if (dateInput === null || dateInput.trim() === '') return;
-            var timeInput = prompt("請輸入時間 (例如: 20:00)：");
-            if (timeInput === null || timeInput.trim() === '') return;
-            targetTeam.fullTimeStr = autoFormatDateWithWeekday(dateInput.trim() + ' ' + timeInput.trim());
-            renderAreaACards(interactiveTeamsState);
-            renderInteractiveShiftArea(interactiveTeamsState);
+// 📅 日期智慧格式化：輸入 1110 自動轉為 11/10
+function formatInlineDateInput(inputEl) {
+    var val = inputEl.value.replace(/\D/g, '');
+    if (val.length >= 3) {
+        inputEl.value = val.substring(0, 2) + '/' + val.substring(2, 4);
+    } else {
+        inputEl.value = val;
+    }
+}
+
+// ⏰ 時間智慧格式化：輸入 2030 自動轉為 20:30
+function formatInlineTimeInput(inputEl) {
+    var val = inputEl.value.replace(/\D/g, '');
+    if (val.length >= 3) {
+        inputEl.value = val.substring(0, 2) + ':' + val.substring(2, 4);
+    } else {
+        inputEl.value = val;
+    }
+}
+
+// ⏱️ 專門用來修改一般班表隊伍時間的智慧彈窗
+function editTeamTimeInline(teamId) {
+    var targetTeam = interactiveTeamsState.find(function(t){ return t.id === teamId; });
+    if (!targetTeam) return;
+
+    var modalContainer = document.getElementById('custom-modal-container');
+    if (!modalContainer) return;
+
+    // 1. 產生本週所有的日期選項
+    var dateOptionsHtml = '';
+    if (typeof weekCycle !== 'undefined' && weekCycle.length > 0) {
+        weekCycle.forEach(function(w) {
+            dateOptionsHtml += '<option value="' + w.key + '">' + w.label + '</option>';
+        });
+    }
+
+    // 2. 產生 00:00 到 23:30 每半小時的時間選項
+    var timeOptionsHtml = '';
+    for (var h = 0; h < 24; h++) {
+        for (var m = 0; m < 60; m += 30) {
+            var hh = String(h).padStart(2, '0');
+            var mm = String(m).padStart(2, '0');
+            var timeStr = hh + ':' + mm;
+            timeOptionsHtml += '<option value="' + timeStr + '">' + timeStr + '</option>';
         }
+    }
+
+    modalContainer.innerHTML = 
+        '<div class="custom-modal-overlay" onclick="closeCustomModal()">' +
+            '<div class="custom-modal-box" onclick="event.stopPropagation()">' +
+                '<h3 style="margin-top:0; color:#0d9488;">⏱️ 修改隊伍時間</h3>' +
+                
+                '<div style="margin-bottom:12px;">' +
+                    '<label>📅 日期選擇 (可下拉或直接盲打 1110)：</label>' +
+                    '<div style="display:flex; gap:6px;">' +
+                        '<select id="inline-time-date-select" style="flex:1;" onchange="document.getElementById(\'inline-time-date-input\').value=this.value;">' + dateOptionsHtml + '</select>' +
+                        '<input type="text" id="inline-time-date-input" placeholder="例: 1110" style="width:90px;" oninput="formatInlineDateInput(this)">' +
+                    '</div>' +
+                '</div>' +
+
+                '<div style="margin-bottom:16px;">' +
+                    '<label>⏰ 時間選擇 (可下拉或直接盲打 2030)：</label>' +
+                    '<div style="display:flex; gap:6px;">' +
+                        '<select id="inline-time-time-select" style="flex:1;" onchange="document.getElementById(\'inline-time-time-input\').value=this.value;">' + timeOptionsHtml + '</select>' +
+                        '<input type="text" id="inline-time-time-input" placeholder="例: 2030" style="width:90px;" oninput="formatInlineTimeInput(this)">' +
+                    '</div>' +
+                '</div>' +
+
+                '<div style="display:flex; gap:10px;">' +
+                    '<button class="btn btn-teal" style="flex:1;" onclick="confirmEditTeamTime(\'' + teamId + '\', false)">確認修改</button>' +
+                    '<button class="btn btn-gray" style="flex:1;" onclick="closeCustomModal()">取消</button>' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+
+    modalContainer.classList.remove('hidden');
+}
 
         function editJobLevelInline(ev, teamId, mIdx) {
             ev.stopPropagation();
@@ -3446,32 +3656,139 @@ function renderHistoryInteractiveShiftArea(teams) {
             renderAreaAUnassignedText(unassignedCandidatesState);
         }
 
-        function openAddTeamModal() {
-    var modalContainer = document.getElementById('custom-modal-container');
-    var dateOptionsHtml = '';
-    weekCycle.forEach(function(w) {
-        var fmt = formatDisplayDateTime(w.label, '20:00');
-        dateOptionsHtml += '<option value="' + fmt + '">' + fmt + '</option>';
-    });
-    modalContainer.innerHTML = '<div class="custom-modal-overlay" onclick="closeCustomModal()"><div class="custom-modal-box" onclick="event.stopPropagation()"><h3 style="margin-top:0; color:#0d9488;">➕ 新增隊伍</h3><label>選擇突襲王：</label><select id="modal-boss-select"><option value="普拉">普拉</option><option value="困拉">困拉</option><option value="炎魔">炎魔</option><option value="龍王">龍王</option><option value="樹王">樹王</option><option value="蝴蝶">蝴蝶</option><option value="卡農">卡農</option></select><label style="margin-top:8px;">時間：</label><select id="modal-time-select">' + dateOptionsHtml + '</select><div style="display:flex; gap:10px; margin-top:15px;"><button class="btn btn-teal" style="flex:1;" onclick="confirmAddNewTeam()">建立</button><button class="btn btn-gray" style="flex:1;" onclick="closeCustomModal()">取消</button></div></div></div>';
-    modalContainer.classList.remove('hidden');
+// 📅 日期智慧格式化：輸入 1110 自動轉為 11/10
+function formatDateInput(inputEl) {
+    var val = inputEl.value.replace(/\D/g, ''); // 只保留數字
+    if (val.length >= 3) {
+        inputEl.value = val.substring(0, 2) + '/' + val.substring(2, 4);
+    } else {
+        inputEl.value = val;
+    }
 }
 
-        function confirmAddNewTeam() {
-            var bossVal = document.getElementById('modal-boss-select').value;
-            var timeVal = document.getElementById('modal-time-select').value;
-            var isDragon = bossVal.includes('龍王');
-            interactiveTeamsState.push({
-                id: 'TCustom_' + Date.now(),
-                boss: isDragon ? '龍王 4場' : bossVal + '連七',
-                fullTimeStr: autoFormatDateWithWeekday(timeVal),
-                size: isDragon ? 12 : 6,
-                members: []
-            });
-            renderAreaACards(interactiveTeamsState);
-            renderInteractiveShiftArea(interactiveTeamsState);
-            closeCustomModal();
+// ⏰ 時間智慧格式化：輸入 2030 自動轉為 20:30
+function formatTimeInput(inputEl) {
+    var val = inputEl.value.replace(/\D/g, ''); // 只保留數字
+    if (val.length >= 3) {
+        inputEl.value = val.substring(0, 2) + ':' + val.substring(2, 4);
+    } else {
+        inputEl.value = val;
+    }
+}
+
+// ➕ 開啟新增隊伍彈窗（日期時間分離、多選項時間、支援盲打自動補符號）
+function openAddTeamModal() {
+    var modalContainer = document.getElementById('custom-modal-container');
+    if (!modalContainer) return;
+
+    // 1. 產生本週所有的日期選項
+    var dateOptionsHtml = '';
+    if (typeof weekCycle !== 'undefined' && weekCycle.length > 0) {
+        weekCycle.forEach(function(w) {
+            dateOptionsHtml += '<option value="' + w.key + '">' + w.label + '</option>';
+        });
+    }
+
+    // 2. 產生 00:00 到 23:30 每半小時的時間選項
+    var timeOptionsHtml = '';
+    for (var h = 0; h < 24; h++) {
+        for (var m = 0; m < 60; m += 30) {
+            var hh = String(h).padStart(2, '0');
+            var mm = String(m).padStart(2, '0');
+            var timeStr = hh + ':' + mm;
+            timeOptionsHtml += '<option value="' + timeStr + '">' + timeStr + '</option>';
         }
+    }
+
+    modalContainer.innerHTML = 
+        '<div class="custom-modal-overlay" onclick="closeCustomModal()">' +
+            '<div class="custom-modal-box" onclick="event.stopPropagation()">' +
+                '<h3 style="margin-top:0; color:#0d9488;">➕ 新增突襲王隊伍</h3>' +
+                
+                '<div style="margin-bottom:12px;">' +
+                    '<label>選擇突襲王：</label>' +
+                    '<select id="new-team-boss">' +
+                        '<option value="普拉">普拉</option>' +
+                        '<option value="困拉">困拉</option>' +
+                        '<option value="炎魔">炎魔</option>' +
+                        '<option value="龍王">龍王</option>' +
+                        '<option value="樹王">樹王</option>' +
+                        '<option value="蝴蝶">蝴蝶</option>' +
+                        '<option value="卡農">卡農</option>' +
+                    '</select>' +
+                '</div>' +
+
+                '<div style="margin-bottom:12px;">' +
+                    '<label>📅 日期選擇 (可下拉或直接盲打 1110)：</label>' +
+                    '<div style="display:flex; gap:6px;">' +
+                        '<select id="new-team-date-select" style="flex:1;" onchange="document.getElementById(\'new-team-date-input\').value=this.value;">' + dateOptionsHtml + '</select>' +
+                        '<input type="text" id="new-team-date-input" placeholder="例: 1110" style="width:90px;" oninput="formatDateInput(this)">' +
+                    '</div>' +
+                '</div>' +
+
+                '<div style="margin-bottom:16px;">' +
+                    '<label>⏰ 時間選擇 (可下拉或直接盲打 2030)：</label>' +
+                    '<div style="display:flex; gap:6px;">' +
+                        '<select id="new-team-time-select" style="flex:1;" onchange="document.getElementById(\'new-team-time-input\').value=this.value;">' + timeOptionsHtml + '</select>' +
+                        '<input type="text" id="new-team-time-input" placeholder="例: 2030" style="width:90px;" oninput="formatTimeInput(this)">' +
+                    '</div>' +
+                '</div>' +
+
+                '<div style="display:flex; gap:10px;">' +
+                    '<button class="btn btn-teal" style="flex:1;" onclick="confirmAddNewTeamSeparated()">建立</button>' +
+                    '<button class="btn btn-gray" style="flex:1;" onclick="closeCustomModal()">取消</button>' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+
+    modalContainer.classList.remove('hidden');
+
+    // 預設將輸入框帶入第一個日期與 20:00
+    var dateSelectEl = document.getElementById('new-team-date-select');
+    if (dateSelectEl && dateSelectEl.options.length > 0) {
+        document.getElementById('new-team-date-input').value = dateSelectEl.value;
+    }
+    var timeSelectEl = document.getElementById('new-team-time-select');
+    if (timeSelectEl) {
+        timeSelectEl.value = '20:00';
+        document.getElementById('new-team-time-input').value = '20:00';
+    }
+}
+
+// 💾 確認建立由日期、時間分離輸入的新隊伍
+function confirmAddNewTeamSeparated() {
+    var boss = document.getElementById('new-team-boss').value;
+    var dateVal = document.getElementById('new-team-date-input').value.trim();
+    var timeVal = document.getElementById('new-team-time-input').value.trim();
+
+    if (!dateVal || !timeVal) {
+        alert('請完整填寫日期與時間！');
+        return;
+    }
+
+    // 自動比對 weekCycle 找出對應的星期幾 (例如 週二)
+    var matchedWeek = weekCycle.find(function(w) { return isDateMatched(w.key, dateVal); });
+    var weekdayStr = matchedWeek ? matchedWeek.label.split(' ')[0] : '週二';
+    
+    // 組合出完整標題格式
+    var finalTitle = dateVal + ' (' + weekdayStr + ') ' + timeVal + ' ' + boss;
+    var isDragon = boss.includes('龍王');
+
+    if (typeof interactiveTeamsState !== 'undefined') {
+        interactiveTeamsState.push({
+            id: 'TCustom_' + Date.now(),
+            boss: isDragon ? '龍王 4場' : boss + '連七',
+            fullTimeStr: autoFormatDateWithWeekday(finalTitle),
+            size: isDragon ? 12 : 6,
+            dateKey: dateVal,
+            timeStr: timeVal,
+            members: []
+        });
+        renderAreaACards(interactiveTeamsState);
+        renderInteractiveShiftArea(interactiveTeamsState);
+    }
+    closeCustomModal();
+}        
 
         function removeTeam(teamId) {
             if (confirm('確定刪除隊伍？')) {
@@ -3889,175 +4206,189 @@ async function adminLoadAnyUserMemberData(targetIdArg) {
             return cleanR === cleanC;
         }
 
-        async function renderHistoryDetail(weekNum) {
-            if (!weekNum || !supabaseClient) return;
-            var areaEl = document.getElementById('history-schedule-area');
-            if (!areaEl) return;
-            areaEl.innerHTML = '正在讀取歷史資料...';
+ async function renderHistoryDetail(weekNum) {
+    if (!weekNum || !supabaseClient) return;
+    var areaEl = document.getElementById('history-schedule-area');
+    if (!areaEl) return;
+    areaEl.innerHTML = '正在讀取歷史資料...';
 
-            try {
-                var res = await supabaseClient.from('artale_history').select('*').eq('week_num', weekNum);
-                if (res.error || !res.data || res.data.length === 0) {
-                    areaEl.innerHTML = '<p style="color:#888; text-align:center;">查無此週歷史資料。</p>';
-                    currentHistoryMembersData = [];
-                    return;
-                }
+    try {
+        var res = await supabaseClient.from('artale_history').select('*').eq('week_num', weekNum);
+        if (res.error || !res.data || res.data.length === 0) {
+            areaEl.innerHTML = '<p style="color:#888; text-align:center;">查無此週歷史資料。</p>';
+            currentHistoryMembersData = [];
+            return;
+        }
 
-                var historyRecord = res.data[0];
-var rawMembers = historyRecord.members_data || [];
-// 依 updated_at 由新到舊排序
-rawMembers.sort(function(a, b) {
-    var tA = a.updated_at ? new Date(a.updated_at).getTime() : 0;
-    var tB = b.updated_at ? new Date(b.updated_at).getTime() : 0;
-    return tB - tA;
-});
-                currentHistoryMembersData = rawMembers;
+        var historyRecord = res.data[0];
+        var rawMembers = historyRecord.members_data || [];
+        rawMembers.sort(function(a, b) {
+            var tA = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+            var tB = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+            return tB - tA;
+        });
+        currentHistoryMembersData = rawMembers;
 
-                var checkId = document.getElementById('history-check-id').value;
-                if (checkId) renderHistoryUserSummary(checkId);
+        var checkId = document.getElementById('history-check-id').value;
+        if (checkId) renderHistoryUserSummary(checkId);
 
-                var histExportTitleEl = document.getElementById('history-shift-export-title');
-                if (histExportTitleEl) {
-                    histExportTitleEl.innerText = (historyRecord.cycle_title || ('第' + weekNum + '週')) + ' TsaiG 突襲班表';
-                }
+        var histExportTitleEl = document.getElementById('history-shift-export-title');
+        if (histExportTitleEl) {
+            histExportTitleEl.innerText = (historyRecord.cycle_title || ('第' + weekNum + '週')) + ' TsaiG 突襲班表';
+        }
 
-                if (rawMembers.length === 0) {
-                    areaEl.innerHTML = '<p style="color:#888; text-align:center;">此週無成員報名資料。</p>';
-                    document.getElementById('hist-stat-v1-text').innerText = '🔥 志願序第一的突襲：尚無資料';
-                    document.getElementById('hist-stat-v13-top1-text').innerText = '🏆 志願數最多的突襲：尚無資料';
-                    document.getElementById('hist-stat-v13-top2-text').innerText = '🥈 志願數第二多的突襲：尚無資料';
-                    initHistoryBlankShiftArea();
-                    return;
-                }
+        if (rawMembers.length === 0) {
+            areaEl.innerHTML = '<p style="color:#888; text-align:center;">此週無成員報名資料。</p>';
+            document.getElementById('hist-stat-v1-text').innerText = '🔥 志願序第一的突襲：尚無資料';
+            document.getElementById('hist-stat-v13-top1-text').innerText = '🏆 志願數最多的突襲：尚無資料';
+            document.getElementById('hist-stat-v13-top2-text').innerText = '🥈 志願數第二多的突襲：尚無資料';
+            initHistoryBlankShiftArea();
+            return;
+        }
 
-                // 💡 動態根據歷史週次（weekNum）算出的 7 天日期
-                var historyWeekCycle = [];
-                var dayNames = ['週二', '週三', '週四', '週五', '週六', '週日', '週一'];
-                var baseTue = new Date(2026, 10, 3); // 第 66 週基準點：2026/11/03
-                var weekDiff = weekNum - 66; 
-                var startTue = new Date(baseTue.getTime() + weekDiff * 7 * 24 * 60 * 60 * 1000);
+        var historyWeekCycle = [];
+        var dayNames = ['週二', '週三', '週四', '週五', '週六', '週日', '週一'];
+        var baseTue = new Date(2026, 10, 3); 
+        var weekDiff = weekNum - 66; 
+        var startTue = new Date(baseTue.getTime() + weekDiff * 7 * 24 * 60 * 60 * 1000);
 
-                for (var i = 0; i < 7; i++) {
-                    var d = new Date(startTue.getTime() + i * 24 * 60 * 60 * 1000);
-                    var mStr = String(d.getMonth() + 1).padStart(2, '0');
-                    var dStr = String(d.getDate()).padStart(2, '0');
-                    historyWeekCycle.push({
-                        key: mStr + '/' + dStr,
-                        label: dayNames[i] + ' (' + mStr + '/' + dStr + ')'
-                    });
-                }
-                currentHistoryWeekCycleDates = historyWeekCycle;
+        for (var i = 0; i < 7; i++) {
+            var d = new Date(startTue.getTime() + i * 24 * 60 * 60 * 1000);
+            var mStr = String(d.getMonth() + 1).padStart(2, '0');
+            var dStr = String(d.getDate()).padStart(2, '0');
+            historyWeekCycle.push({
+                key: mStr + '/' + dStr,
+                label: dayNames[i] + ' (' + mStr + '/' + dStr + ')'
+            });
+        }
+        currentHistoryWeekCycleDates = historyWeekCycle;
 
-                var allCharEntries = [];
-                rawMembers.forEach(function(m) {
-                    var hasTime = m.ranges && Array.isArray(m.ranges) && m.ranges.length > 0;
-                    if (hasTime && m.characters && Array.isArray(m.characters)) {
-                        m.characters.forEach(function(c) {
-                            if (c && c.job) {
-                                allCharEntries.push({
-                                    id: m.id, job: c.job || '', level: c.level || '', style: c.style || '', ticket: c.ticket || '',
-                                    hasMW20: !!c.hasMW20, v1: c.v1 || '', v2: c.v2 || '', v3: c.v3 || '',
-                                    exc1: c.exc1 || '', exc2: c.exc2 || '', ranges: m.ranges || []
-                                });
-                            }
+        var allCharEntries = [];
+        rawMembers.forEach(function(m) {
+            var hasTime = m.ranges && Array.isArray(m.ranges) && m.ranges.length > 0;
+            if (hasTime && m.characters && Array.isArray(m.characters)) {
+                m.characters.forEach(function(c) {
+                    if (c && c.job) {
+                        allCharEntries.push({
+                            id: m.id, job: c.job || '', level: c.level || '', style: c.style || '', ticket: c.ticket || '',
+                            hasMW20: !!c.hasMW20, v1: c.v1 || '', v2: c.v2 || '', v3: c.v3 || '',
+                            exc1: c.exc1 || '', exc2: c.exc2 || '', ranges: m.ranges || []
                         });
                     }
                 });
-
-                var v1CountMap = {};
-                var v13CountMap = {};
-
-                allCharEntries.forEach(function(c) {
-                    var v1 = (c.v1 || '').trim();
-                    if (v1 && v1 !== 'ALL') v1CountMap[v1] = (v1CountMap[v1] || 0) + 1;
-
-                    var uniqueBossesInV13 = new Set();
-                    [c.v1, c.v2, c.v3].forEach(function(v) {
-                        var boss = (v || '').trim();
-                        if (boss && boss !== 'ALL') uniqueBossesInV13.add(boss);
-                    });
-                    uniqueBossesInV13.forEach(function(boss) {
-                        v13CountMap[boss] = (v13CountMap[boss] || 0) + 1;
-                    });
-                });
-
-                var topV1Boss = '無';
-                var topV1Count = 0;
-                Object.keys(v1CountMap).forEach(function(boss) {
-                    if (v1CountMap[boss] > topV1Count) { topV1Count = v1CountMap[boss]; topV1Boss = boss; }
-                });
-
-                var sortedV13Arr = Object.keys(v13CountMap).map(function(boss) {
-                    return { boss: boss, count: v13CountMap[boss] };
-                }).sort(function(a, b) { return b.count - a.count; });
-
-                var rank1Text = sortedV13Arr.length > 0 ? sortedV13Arr[0].boss + ' (共 ' + sortedV13Arr[0].count + ' 角色有列入志願中)' : '尚無資料';
-                var rank2Text = sortedV13Arr.length > 1 ? sortedV13Arr[1].boss + ' (共 ' + sortedV13Arr[1].count + ' 角色有列入志願中)' : '尚無資料';
-                var v1TextDisplay = (topV1Count > 0) ? (topV1Boss + ' (共 ' + topV1Count + ' 角色排在志願1)') : '尚無資料';
-
-                document.getElementById('hist-stat-v1-text').innerText = '🔥 志願序第一的突襲：' + v1TextDisplay;
-                document.getElementById('hist-stat-v13-top1-text').innerText = '🏆 志願數最多的突襲：' + rank1Text;
-                document.getElementById('hist-stat-v13-top2-text').innerText = '🥈 志願數第二多的突襲：' + rank2Text;
-
-
-                var html = '<div style="font-weight:bold; color:#7e22ce; margin-bottom:8px;">📦 檔案封存標題：' + (historyRecord.cycle_title || '第65週') + '</div>';
-                html += '<div class="schedule-scroll-wrapper"><div class="schedule-grid-container">';
-                
-                historyWeekCycle.forEach(function(w) {
-                    var cycleKey = w.key;
-                    html += '<div class="schedule-day-column"><div class="schedule-day-header">' + w.label + '</div><div class="schedule-day-body">';
-                    
-                    allCharEntries.forEach(function(c) {
-                        var dayRanges = c.ranges.filter(function(r) { return isDateMatched(r.dateKey, cycleKey); });
-                        if (dayRanges.length > 0) {
-                            var bgClass = 'boss-' + (c.v1 || 'default');
-                            var jobColorClass = 'job-color-' + (c.job || '');
-                            var timeLinesHtml = dayRanges.map(function(r){ return '<div style="margin-top:1px;">⏰ ' + r.startStr + '~' + r.endStr + '</div>'; }).join('');
-                            var ticketText = (c.ticket || '') + (c.hasMW20 ? ' (🍁20)' : '');
-
-                            var excTags = '';
-                            if (c.exc1) excTags += '<span class="boss-tag-exclude">❌' + c.exc1 + '</span>';
-                            if (c.exc2) excTags += '<span class="boss-tag-exclude">❌' + c.exc2 + '</span>';
-
-                            html += '<div class="member-card ' + bgClass + '">' +
-                                '<div style="font-weight:bold; font-size:12px; overflow:hidden; text-overflow:ellipsis; max-width:85px;" class="' + jobColorClass + '">' + c.id + '</div>' +
-                                '<div style="font-size:11px; font-weight:bold;" class="' + jobColorClass + '">' + c.job + ' Lv.' + c.level + '</div>' +
-                                '<div style="font-size:9px; color:#4b5563;">' + c.style + '</div>' +
-                                '<div style="font-size:9px; color:#374151;">' + ticketText + '</div>' +
-                                '<div style="font-size:9px; color:#2563eb; font-weight:bold; margin-top:2px; line-height:1.2;">' + timeLinesHtml + '</div>' +
-                                '<div style="position:absolute; top:4px; right:3px; display:flex; flex-direction:column; gap:1px; align-items:flex-end;">' +
-                                    '<span class="boss-tag-v1 boss-' + c.v1 + '">1:' + c.v1 + '</span>' +
-                                    (c.v2 ? '<span class="boss-tag-v23 boss-' + c.v2 + '">2:' + c.v2 + '</span>' : '') +
-                                    (c.v3 ? '<span class="boss-tag-v3 boss-' + c.v3 + '">3:' + c.v3 + '</span>' : '') +
-                                    excTags +
-                                '</div>' +
-                            '</div>';
-                        }
-                    });
-                    html += '</div></div>';
-                });
-                html += '</div></div>';
-                areaEl.innerHTML = html;
-
-                // 💡 歷史紀錄切換時，B 區維持空白讓使用者手動新增與編輯
-              // 💡 修正：直接調用自動抓取函式載入該週角色，並更新歷史班表標題
-                autoPopulateHistoryUnassignedFromWeekData(rawMembers);
-                
-                // 清空歷史排班隊伍區，讓使用者可以重新針對該週手動排班或自由拖拉
-                historyInteractiveTeamsState = [];
-                renderHistoryInteractiveShiftArea(historyInteractiveTeamsState);
-                checkAndRenderHistoryBValidationErrors();
-
-                // 更新歷史 B 區上方標題帶入該週名稱
-                var histExportTitleEl = document.getElementById('history-shift-export-title');
-                if (histExportTitleEl) {
-                    histExportTitleEl.innerText = (historyRecord.cycle_title || ('第' + weekNum + '週')) + ' TsaiG 突襲班表';
-                }
-
-            } catch (err) {
-                areaEl.innerHTML = '<p style="color:red; text-align:center;">讀取歷史資料發生錯誤：' + err.message + '</p>';
             }
+        });
+
+        // 🎯 歷史頁面專屬過濾邏輯
+        var displayHistEntries = allCharEntries.filter(function(c) {
+            var v1 = (c.v1 || '').trim();
+            var v2 = (c.v2 || '').trim();
+            var v3 = (c.v3 || '').trim();
+
+            if (currentHistoryBossFilter === 'ALL') return true;
+
+            var isEligibleByWish = false;
+            if (currentHistoryWishFilter === 'V1') {
+                isEligibleByWish = (v1 === currentHistoryBossFilter || v1 === 'ALL');
+            } else if (currentHistoryWishFilter === 'V12') {
+                isEligibleByWish = (v1 === currentHistoryBossFilter || v2 === currentHistoryBossFilter || v1 === 'ALL' || v2 === 'ALL');
+            } else { // V13
+                isEligibleByWish = (v1 === currentHistoryBossFilter || v2 === currentHistoryBossFilter || v3 === currentHistoryBossFilter || v1 === 'ALL' || v2 === 'ALL' || v3 === 'ALL');
+            }
+            return isEligibleByWish;
+        });
+
+        // 📊 熱門統計計算
+        var v1CountMap = {};
+        var v13CountMap = {};
+
+        allCharEntries.forEach(function(c) {
+            var v1 = (c.v1 || '').trim();
+            if (v1 && v1 !== 'ALL') v1CountMap[v1] = (v1CountMap[v1] || 0) + 1;
+
+            var uniqueBossesInV13 = new Set();
+            [c.v1, c.v2, c.v3].forEach(function(v) {
+                var boss = (v || '').trim();
+                if (boss && boss !== 'ALL') uniqueBossesInV13.add(boss);
+            });
+            uniqueBossesInV13.forEach(function(boss) {
+                v13CountMap[boss] = (v13CountMap[boss] || 0) + 1;
+            });
+        });
+
+        var topV1Boss = '無';
+        var topV1Count = 0;
+        Object.keys(v1CountMap).forEach(function(boss) {
+            if (v1CountMap[boss] > topV1Count) { topV1Count = v1CountMap[boss]; topV1Boss = boss; }
+        });
+
+        var sortedV13Arr = Object.keys(v13CountMap).map(function(boss) {
+            return { boss: boss, count: v13CountMap[boss] };
+        }).sort(function(a, b) { return b.count - a.count; });
+
+        var rank1Text = sortedV13Arr.length > 0 ? sortedV13Arr[0].boss + ' (共 ' + sortedV13Arr[0].count + ' 角色有列入志願中)' : '尚無資料';
+        var rank2Text = sortedV13Arr.length > 1 ? sortedV13Arr[1].boss + ' (共 ' + sortedV13Arr[1].count + ' 角色有列入志願中)' : '尚無資料';
+        var v1TextDisplay = (topV1Count > 0) ? (topV1Boss + ' (共 ' + topV1Count + ' 角色排在志願1)') : '尚無資料';
+
+        document.getElementById('hist-stat-v1-text').innerText = '🔥 志願序第一的突襲：' + v1TextDisplay;
+        document.getElementById('hist-stat-v13-top1-text').innerText = '🏆 志願數最多的突襲：' + rank1Text;
+        document.getElementById('hist-stat-v13-top2-text').innerText = '🥈 志願數第二多的突襲：' + rank2Text;
+
+
+        var html = '<div style="font-weight:bold; color:#7e22ce; margin-bottom:8px;">📦 檔案封存標題：' + (historyRecord.cycle_title || '第65週') + '</div>';
+        html += '<div class="schedule-scroll-wrapper"><div class="schedule-grid-container">';
+        
+        historyWeekCycle.forEach(function(w) {
+            var cycleKey = w.key;
+            html += '<div class="schedule-day-column"><div class="schedule-day-header">' + w.label + '</div><div class="schedule-day-body">';
+            
+            // ✅ 歷史區塊改為走訪 displayHistEntries
+            displayHistEntries.forEach(function(c) {
+                var dayRanges = c.ranges.filter(function(r) { return isDateMatched(r.dateKey, cycleKey); });
+                if (dayRanges.length > 0) {
+                    var bgClass = 'boss-' + (c.v1 || 'default');
+                    var jobColorClass = 'job-color-' + (c.job || '');
+                    var timeLinesHtml = dayRanges.map(function(r){ return '<div style="margin-top:1px;">⏰ ' + r.startStr + '~' + r.endStr + '</div>'; }).join('');
+                    var ticketText = (c.ticket || '') + (c.hasMW20 ? ' (🍁20)' : '');
+
+                    var excTags = '';
+                    if (c.exc1) excTags += '<span class="boss-tag-exclude">❌' + c.exc1 + '</span>';
+                    if (c.exc2) excTags += '<span class="boss-tag-exclude">❌' + c.exc2 + '</span>';
+
+                    html += '<div class="member-card ' + bgClass + '">' +
+                        '<div style="font-weight:bold; font-size:12px; overflow:hidden; text-overflow:ellipsis; max-width:85px;" class="' + jobColorClass + '">' + c.id + '</div>' +
+                        '<div style="font-size:11px; font-weight:bold;" class="' + jobColorClass + '">' + c.job + ' Lv.' + c.level + '</div>' +
+                        '<div style="font-size:9px; color:#4b5563;">' + c.style + '</div>' +
+                        '<div style="font-size:9px; color:#374151;">' + ticketText + '</div>' +
+                        '<div style="font-size:9px; color:#2563eb; font-weight:bold; margin-top:2px; line-height:1.2;">' + timeLinesHtml + '</div>' +
+                        '<div style="position:absolute; top:4px; right:3px; display:flex; flex-direction:column; gap:1px; align-items:flex-end;">' +
+                            '<span class="boss-tag-v1 boss-' + c.v1 + '">1:' + c.v1 + '</span>' +
+                            (c.v2 ? '<span class="boss-tag-v23 boss-' + c.v2 + '">2:' + c.v2 + '</span>' : '') +
+                            (c.v3 ? '<span class="boss-tag-v3 boss-' + c.v3 + '">3:' + c.v3 + '</span>' : '') +
+                            excTags +
+                        '</div>' +
+                    '</div>';
+                }
+            });
+            html += '</div></div>';
+        });
+        html += '</div></div>';
+        areaEl.innerHTML = html;
+
+        autoPopulateHistoryUnassignedFromWeekData(rawMembers);
+        historyInteractiveTeamsState = [];
+        renderHistoryInteractiveShiftArea(historyInteractiveTeamsState);
+        checkAndRenderHistoryBValidationErrors();
+
+        var histExportTitleEl = document.getElementById('history-shift-export-title');
+        if (histExportTitleEl) {
+            histExportTitleEl.innerText = (historyRecord.cycle_title || ('第' + weekNum + '週')) + ' TsaiG 突襲班表';
         }
+
+    } catch (err) {
+        areaEl.innerHTML = '<p style="color:red; text-align:center;">讀取歷史資料發生錯誤：' + err.message + '</p>';
+    }
+}
 
 async function renderSchedule() {
     var areaEl = document.getElementById('full-schedule-area');
@@ -4065,7 +4396,6 @@ async function renderSchedule() {
     areaEl.innerHTML = '正在讀取本週成員總覽資料...';
 
     try {
-        // 💡 加上 .order('updated_at', { ascending: false }) 讓最新更新的排在最前面
         var res = await supabaseClient
             .from('artale_members')
             .select('*')
@@ -4080,7 +4410,6 @@ async function renderSchedule() {
         }
 
         var rawMembers = res.data;
-        // 移除原本的 rawMembers.reverse(); 因為資料庫已經透過 updated_at 由新到舊排好序了！[cite: 1]
 
         var checkId = document.getElementById('quick-check-id').value;
         if (checkId) renderMyBookingSummary(checkId);
@@ -4099,6 +4428,25 @@ async function renderSchedule() {
                     }
                 });
             }
+        });
+
+        // 🎯 核心過濾邏輯：根據當前副本與志願範圍進行過濾
+        var displayCharEntries = allCharEntries.filter(function(c) {
+            var v1 = (c.v1 || '').trim();
+            var v2 = (c.v2 || '').trim();
+            var v3 = (c.v3 || '').trim();
+
+            if (currentScheduleBossFilter === 'ALL') return true;
+
+            var isEligibleByWish = false;
+            if (currentScheduleWishFilter === 'V1') {
+                isEligibleByWish = (v1 === currentScheduleBossFilter || v1 === 'ALL');
+            } else if (currentScheduleWishFilter === 'V12') {
+                isEligibleByWish = (v1 === currentScheduleBossFilter || v2 === currentScheduleBossFilter || v1 === 'ALL' || v2 === 'ALL');
+            } else { // V13
+                isEligibleByWish = (v1 === currentScheduleBossFilter || v2 === currentScheduleBossFilter || v3 === currentScheduleBossFilter || v1 === 'ALL' || v2 === 'ALL' || v3 === 'ALL');
+            }
+            return isEligibleByWish;
         });
 
         // 📊 熱門統計計算
@@ -4173,9 +4521,10 @@ async function renderSchedule() {
 
             html += '<div class="schedule-day-column"><div class="schedule-day-header">' + w.label + '</div><div class="schedule-day-body">';
             
-            allCharEntries.forEach(function(c) {
+            // ✅ 正確替換為 displayCharEntries
+            displayCharEntries.forEach(function(c) {
                 var dayRanges = c.ranges.filter(function(r) { return isDateMatched(r.dateKey, cycleKey); });
-                if (dayRanges.length > 0) {
+                if (dayRanges.length > 0) {            
                     var v1Boss = (c.v1 || '').trim();
                     var bgClass = 'boss-' + (v1Boss || 'default');
                     
@@ -4218,6 +4567,49 @@ async function renderSchedule() {
     } catch (err) {
         areaEl.innerHTML = '<div style="color:red; text-align:center;">讀取總覽資料發生錯誤：' + err.message + '</div>';
     }
+}
+
+// 全域狀態：當前總表篩選條件
+var currentScheduleBossFilter = 'ALL'; // 'ALL', '普拉', '困拉', '炎魔', '龍王', '樹王', '蝴蝶', '卡農'
+var currentScheduleWishFilter = 'V13'; // 預設改為 1~3 皆考慮
+
+function setScheduleBossFilter(bossName) {
+    currentScheduleBossFilter = bossName;
+    
+    // 更新副本按鈕 UI 樣式
+    var btns = document.querySelectorAll('.filter-boss-btn');
+    btns.forEach(function(btn) {
+        if (btn.innerText.includes(bossName) || (bossName === 'ALL' && btn.innerText.includes('全部'))) {
+            btn.style.background = '#2563eb';
+            btn.style.color = '#ffffff';
+        } else {
+            btn.style.background = '#f1f5f9';
+            btn.style.color = '#334155';
+        }
+    });
+
+    renderSchedule();
+}
+
+function setScheduleWishFilter(wishMode) {
+    currentScheduleWishFilter = wishMode;
+    var btnV13 = document.getElementById('btn-wish-v13');
+    var btnV12 = document.getElementById('btn-wish-v12');
+    var btnV1 = document.getElementById('btn-wish-v1-btn') || document.getElementById('btn-wish-v1');
+
+    [btnV13, btnV12, btnV1].forEach(function(b) {
+        if (!b) return;
+        b.style.background = '#f1f5f9';
+        b.style.color = '#334155';
+    });
+
+    var activeBtn = (wishMode === 'V13') ? btnV13 : (wishMode === 'V12' ? btnV12 : btnV1);
+    if (activeBtn) {
+        activeBtn.style.background = '#0d9488';
+        activeBtn.style.color = '#ffffff';
+    }
+
+    renderSchedule();
 }
 
 async function adminBackupCurrentWeekHistory() {
@@ -4820,6 +5212,114 @@ function toggleCharBoxMw20Bg(checkboxEl) {
         charBox.classList.add('has-mw20-active');
     } else {
         charBox.classList.remove('has-mw20-active');
+    }
+}
+
+// 📜 歷史頁面專屬篩選狀態
+var currentHistoryBossFilter = 'ALL';
+var currentHistoryWishFilter = 'V13';
+
+function setHistoryBossFilter(bossName) {
+    currentHistoryBossFilter = bossName;
+    
+    var btns = document.querySelectorAll('.hist-filter-boss-btn');
+    btns.forEach(function(btn) {
+        if (btn.innerText.includes(bossName) || (bossName === 'ALL' && btn.innerText.includes('全部'))) {
+            btn.style.background = '#991b1b';
+            btn.style.color = '#ffffff';
+        } else {
+            btn.style.background = '#fef2f2';
+            btn.style.color = '#334155';
+        }
+    });
+
+    var weekSelect = document.getElementById('history-week-select');
+    if (weekSelect && weekSelect.value) {
+        renderHistoryDetail(weekSelect.value);
+    }
+}
+
+function setHistoryWishFilter(wishMode) {
+    currentHistoryWishFilter = wishMode;
+    var btnV13 = document.getElementById('hist-btn-wish-v13');
+    var btnV12 = document.getElementById('hist-btn-wish-v12');
+    var btnV1 = document.getElementById('hist-btn-wish-v1');
+
+    [btnV13, btnV12, btnV1].forEach(function(b) {
+        if (!b) return;
+        b.style.background = '#fef2f2';
+        b.style.color = '#334155';
+    });
+
+    var activeBtn = (wishMode === 'V13') ? btnV13 : (wishMode === 'V12' ? btnV12 : btnV1);
+    if (activeBtn) {
+        activeBtn.style.background = '#991b1b';
+        activeBtn.style.color = '#ffffff';
+    }
+
+    var weekSelect = document.getElementById('history-week-select');
+    if (weekSelect && weekSelect.value) {
+        renderHistoryDetail(weekSelect.value);
+    }
+}
+
+// 🤖 自動載入本週所有報名角色至「破破排班系統」未排入池的初始化函式
+async function autoInitShiftUnassignedPool() {
+    if (!supabaseClient) return;
+    
+    var currentWeekStr = '第' + dynamicCurrentWeekNum + '週';
+    var res = await supabaseClient.from('artale_members').select('*').eq('week', currentWeekStr);
+    
+    // 備援：若當週特別篩選無資料，則抓取全部
+    if (!res.data || res.data.length === 0) {
+        res = await supabaseClient.from('artale_members').select('*');
+    }
+    
+    if (!res.data) return;
+
+    var allMembers = res.data;
+    var validCycleKeys = weekCycle.map(function(w) { return w.key; });
+    var poolCandidates = [];
+
+    allMembers.forEach(function(m) {
+        // 檢查該成員本週是否有填寫有效的出戰時間
+        var validRanges = (m.ranges || []).filter(function(r) {
+            return validCycleKeys.some(function(ck) { return isDateMatched(r.dateKey, ck); });
+        });
+
+        if (validRanges.length > 0 && m.characters && Array.isArray(m.characters)) {
+            m.characters.forEach(function(c, cIdx) {
+                if (c && c.job && c.job !== '自訂') {
+                    poolCandidates.push({
+                        uniqueKey: 'shift-init-' + m.id + '-c' + cIdx,
+                        userId: m.id,
+                        job: c.job || '',
+                        level: parseInt(c.level || 120, 10),
+                        style: c.style || '💪積極出戰',
+                        ticket: c.ticket || '🎟️不使用',
+                        mw20: !!c.hasMW20,
+                        isExtraTicket: false,
+                        v1: c.v1 || '',
+                        v2: c.v2 || '',
+                        v3: c.v3 || '',
+                        exc1: c.exc1 || '',
+                        exc2: c.exc2 || '',
+                        ranges: validRanges
+                    });
+                }
+            });
+        }
+    });
+
+    // 只有當破破排班系統的未排入池目前是空的，或是使用者剛進來時，才自動賦值
+    if (unassignedCandidatesState.length === 0 && interactiveTeamsState.length === 0) {
+        unassignedCandidatesState = poolCandidates;
+        renderUnassignedMembers();
+        
+        var unassignedTextEl = document.getElementById('shift-preview-a-unassigned-text');
+        if (unassignedTextEl) {
+            unassignedTextEl.innerHTML = '已自動載入本週所有報名角色，共 ' + poolCandidates.length + ' 人待排入。';
+        }
     }
 }
 
