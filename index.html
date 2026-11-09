@@ -599,9 +599,10 @@
                            <div style="display: flex; flex-direction: column; gap: 6px;">
     <!-- 上面 3 個按鈕 -->
     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-        <button type="button" onclick="openSaveModal('shift')" class="btn btn-purple" style="font-size: 12px; padding: 5px 10px;">💾 管理員存檔(3槽)</button>
-        <button type="button" onclick="openLoadModal('shift')" class="btn btn-teal" style="font-size: 12px; padding: 5px 10px;">📂 管理員載入(3槽)</button>
-        <button type="button" onclick="downloadShiftImage()" class="btn btn-blue" style="font-size: 12px; padding: 5px 10px; background: #2563eb;">📥 下載班表圖片</button>
+        <button type="button" onclick="openSaveModal('shift')" class="btn btn-purple" style="font-size: 12px; padding: 5px 10px;">💾 存檔</button>
+        <button type="button" onclick="openLoadModal('shift')" class="btn btn-teal" style="font-size: 12px; padding: 5px 10px;">📂 載入</button>
+        <button type="button" onclick="downloadShiftImage()" class="btn btn-blue" style="font-size: 12px; padding: 5px 10px; background: #2563eb;">📥 下載圖片</button>
+        <button type="button" onclick="publishWebSchedule('shift')" class="btn" style="font-size: 12px; padding: 5px 10px; background: #ec4899; color: white; font-weight: bold;">📢 公佈班表</button>
     </div>
     <!-- 下面 2 個按鈕 -->
     <div style="display: flex; gap: 8px;">
@@ -787,9 +788,10 @@
                    <div style="display: flex; flex-direction: column; gap: 6px;">
     <!-- 上面 3 個按鈕 -->
     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-        <button type="button" onclick="openSaveModal('history')" class="btn btn-purple" style="font-size: 12px; padding: 5px 10px;">💾 歷史存檔(3槽)</button>
-        <button type="button" onclick="openLoadModal('history')" class="btn btn-teal" style="font-size: 12px; padding: 5px 10px;">📂 歷史載入(3槽)</button>
-        <button type="button" onclick="downloadHistoryShiftImage()" class="btn btn-blue" style="font-size: 12px; padding: 5px 10px; background: #991b1b;">📥 下載歷史班表圖片</button>
+        <button type="button" onclick="openSaveModal('history')" class="btn btn-purple" style="font-size: 12px; padding: 5px 10px;">💾 存檔</button>
+        <button type="button" onclick="openLoadModal('history')" class="btn btn-teal" style="font-size: 12px; padding: 5px 10px;">📂 載入</button>
+        <button type="button" onclick="downloadHistoryShiftImage()" class="btn btn-blue" style="font-size: 12px; padding: 5px 10px; background: #991b1b;">📥 下載圖片</button>
+        <button type="button" onclick="publishWebSchedule('history')" class="btn" style="font-size: 12px; padding: 5px 10px; background: #ec4899; color: white; font-weight: bold;">📢 公佈班表</button>
     </div>
     <!-- 下面 2 個按鈕 -->
     <div style="display: flex; gap: 8px;">
@@ -2091,55 +2093,116 @@ if (tab === 'shift') {
             if (tab === 'admin' && isAdminLoggedIn) renderAdminMemberList();
         }
 
-        async function loadPublishedSchedules() {
-            var listEl = document.getElementById('pub-schedules-list');
-            if (!listEl) return;
-            listEl.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">載入突襲班表資料中...</div>';
+// 📢 載入並渲染已發布的突襲班表 (支援圖片與動態網頁雙模式 + 個人發光標示)
+async function loadPublishedSchedules() {
+    var listEl = document.getElementById('pub-schedules-list');
+    if (!listEl) return;
+    listEl.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">載入突襲班表資料中...</div>';
 
-            var hintEl = document.getElementById('pub-admin-login-hint');
-            var formEl = document.getElementById('pub-admin-form');
-            if (isAdminLoggedIn) {
-                if (hintEl) hintEl.classList.add('hidden');
-                if (formEl) formEl.classList.remove('hidden');
-            } else {
-                if (hintEl) hintEl.classList.remove('hidden');
-                if (formEl) formEl.classList.add('hidden');
-            }
+    var hintEl = document.getElementById('pub-admin-login-hint');
+    var formEl = document.getElementById('pub-admin-form');
+    if (isAdminLoggedIn) {
+        if (hintEl) hintEl.classList.add('hidden');
+        if (formEl) formEl.classList.remove('hidden');
+    } else {
+        if (hintEl) hintEl.classList.remove('hidden');
+        if (formEl) formEl.classList.add('hidden');
+    }
 
-            if (!supabaseClient) {
-                listEl.innerHTML = '<div style="color:red; text-align:center;">Supabase 未連線</div>';
-                return;
-            }
+    if (!supabaseClient) {
+        listEl.innerHTML = '<div style="color:red; text-align:center;">Supabase 未連線</div>';
+        return;
+    }
 
-            var res = await supabaseClient.from('artale_schedules').select('*').order('week_num', { ascending: false });
-            if (res.error || !res.data || res.data.length === 0) {
-                listEl.innerHTML = '<div style="text-align:center; color:#888; padding:30px; background:#fef2f8; border-radius:8px;">目前尚未發布任何輪次的突襲班表。</div>';
-                return;
-            }
+    var res = await supabaseClient.from('artale_schedules').select('*').order('week_num', { ascending: false });
+    if (res.error || !res.data || res.data.length === 0) {
+        listEl.innerHTML = '<div style="text-align:center; color:#888; padding:30px; background:#fef2f8; border-radius:8px;">目前尚未發布任何輪次的突襲班表。</div>';
+        return;
+    }
 
-            var html = '';
-            res.data.forEach(function(item) {
-                var deleteBtn = isAdminLoggedIn ? '<button type="button" onclick="deletePublishedSchedule(' + item.id + ')" class="btn btn-red" style="font-size:11px; padding:3px 8px;">🗑️ 刪除此輪</button>' : '';
-                
-                html += '<div class="pub-schedule-card">' +
-                    '<div class="pub-schedule-header">' +
-                        '<span>📅 【' + item.cycle_title + '】</span>' +
-                        '<div><span style="font-size:12px; background:#fbcfe8; color:#9d174d; padding:2px 8px; border-radius:12px; margin-right:6px;">第 ' + item.week_num + ' 週</span>' + deleteBtn + '</div>' +
+    var myUserId = (currentLoggedInUserId || '').trim().toLowerCase();
+    var html = '';
+
+    res.data.forEach(function(item) {
+        var deleteBtn = isAdminLoggedIn ? '<button type="button" onclick="deletePublishedSchedule(' + item.id + ')" class="btn btn-red" style="font-size:11px; padding:3px 8px;">🗑️ 刪除此輪</button>' : '';
+        
+        html += '<div class="pub-schedule-card">' +
+            '<div class="pub-schedule-header">' +
+                '<span>📅 【' + item.cycle_title + '】</span>' +
+                '<div><span style="font-size:12px; background:#fbcfe8; color:#9d174d; padding:2px 8px; border-radius:12px; margin-right:6px;">第 ' + item.week_num + ' 週</span>' + deleteBtn + '</div>' +
+            '</div>';
+
+        // 1. 若有動態網頁班表資料 (teams_data)，優先渲染網頁互動隊伍
+        if (item.teams_data && Array.isArray(item.teams_data) && item.teams_data.length > 0) {
+            html += '<div class="teams-grid-layout" style="margin-top:10px;">';
+            item.teams_data.forEach(function(t) {
+                var boxClass = getTeamBoxThemeClass(t.boss);
+                var titleWithSymbol = getFormattedBossTitle(t.boss);
+                var isDragon = t.boss.includes('龍王') || t.size === 12;
+                var wideCardClass = isDragon ? 'dragon-wide-card' : '';
+
+                html += '<div class="shift-team-card ' + boxClass + ' ' + wideCardClass + '" style="cursor:default;">' +
+                    '<div class="shift-team-header">' +
+                        '<div class="team-title-row">' +
+                            '<span style="font-size:15px; font-weight:900;">' + titleWithSymbol + '</span>' +
+                            '<span class="team-time-badge">' + autoFormatDateWithWeekday(t.fullTimeStr) + '</span>' +
+                        '</div>' +
                     '</div>';
 
-                if (item.image_url) {
-                    html += '<a href="' + item.image_url + '" target="_blank" title="點擊查看原圖">' +
-                        '<img src="' + item.image_url + '" class="pub-schedule-img" alt="第' + item.week_num + '週班表">' +
-                    '</a>';
+                if (isDragon) {
+                    var leftSquad = t.members.slice(0, 6);
+                    var rightSquad = t.members.slice(6, 12);
+                    html += '<div class="shift-grid-12-wide"><div class="dragon-sub-squad">';
+                    leftSquad.forEach(function(m) { html += renderPubMemberCardMarkup(m, myUserId); });
+                    html += '</div><div class="dragon-sub-squad">';
+                    rightSquad.forEach(function(m) { html += renderPubMemberCardMarkup(m, myUserId); });
+                    html += '</div></div>';
                 } else {
-                    html += '<div style="text-align:center; color:#999; padding:20px; background:#f9fafb; border-radius:6px;">此週尚未上傳圖檔</div>';
+                    html += '<div class="shift-grid-6">';
+                    t.members.forEach(function(m) { html += renderPubMemberCardMarkup(m, myUserId); });
+                    html += '</div>';
                 }
-
                 html += '</div>';
             });
-
-            listEl.innerHTML = html;
+            html += '</div>';
         }
+
+        // 2. 若有傳統上傳圖片，同時展示圖片
+        if (item.image_url) {
+            html += '<div style="margin-top:10px;"><a href="' + item.image_url + '" target="_blank" title="點擊查看原圖">' +
+                '<img src="' + item.image_url + '" class="pub-schedule-img" alt="第' + item.week_num + '週班表">' +
+            '</a></div>';
+        }
+
+        if (!item.image_url && (!item.teams_data || item.teams_data.length === 0)) {
+            html += '<div style="text-align:center; color:#999; padding:20px; background:#f9fafb; border-radius:6px;">此週尚未填寫內容</div>';
+        }
+
+        html += '</div>';
+    });
+
+    listEl.innerHTML = html;
+}
+
+// 渲染發布區成員卡片 (含個人專屬發光判斷)
+function renderPubMemberCardMarkup(m, loggedInUserId) {
+    if (m.isEmptySlot) {
+        return '<div class="excel-char-box-empty">➕ ' + m.userId + '</div>';
+    }
+    var jobBg = (m.job && m.job !== '自訂') ? ('job-bg-' + m.job) : 'job-bg-default';
+    var mwStr = m.mw20 ? '<span class="text-inline-mw20"><span class="leaf">🍁</span><span class="num">20</span></span>' : '';
+    var addStr = m.isExtraTicket ? '<span class="text-inline-ticket">🎫</span>' : '';
+    var headerText = (m.job && m.job !== '自訂') ? (m.job + ' Lv.' + m.level) : '未定職業';
+
+    // 💡 比對是否為登入玩家本人：若為本人，加入專屬發光樣式 class
+    var isMyCard = (loggedInUserId && m.userId && m.userId.trim().toLowerCase() === loggedInUserId);
+    var glowStyle = isMyCard ? 'border: 2.5px solid #eab308 !important; box-shadow: 0 0 12px rgba(234, 179, 8, 0.9); animation: glow-pulse 1.8s infinite ease-in-out;' : '';
+
+    return '<div class="excel-char-box" style="cursor:default; ' + glowStyle + '">' +
+        '<div class="excel-job-header ' + jobBg + '">' + headerText + '</div>' +
+        '<div class="excel-user-body"><span' + (isMyCard ? ' style="color:#ca8a04; font-weight:900;"' : '') + '>' + (isMyCard ? '⭐ ' : '') + m.userId + '</span>' + addStr + mwStr + '</div>' +
+    '</div>';
+}        
 
         async function uploadScheduleImage() {
             if (!isAdminLoggedIn) { alert('請先以管理員身份登入！'); return; }
@@ -4713,7 +4776,8 @@ function openSaveModal(mode) {
 }
 
 function executeSaveData(mode, slotNum) {
-    var storageKey = (mode === 'history') ? ('artale_hist_slot_' + slotNum) : ('artale_shift_slot_' + slotNum);
+    // 💡 改用統一的 key 名稱，讓破破排班系統與歷史紀錄共用槽位
+    var storageKey = 'artale_shared_slot_' + slotNum;
     var payload = {};
 
     if (mode === 'history') {
@@ -4734,7 +4798,7 @@ function executeSaveData(mode, slotNum) {
 
     try {
         localStorage.setItem(storageKey, JSON.stringify(payload));
-        alert('🎉 成功將排班陣容儲存至【存檔槽位 #' + slotNum + '】！');
+        alert('🎉 成功將排班陣容儲存至【共用存檔槽位 #' + slotNum + '】！');
         closeCustomModal();
     } catch(e) {
         alert('❌ 存檔失敗：' + e.message);
@@ -4746,7 +4810,8 @@ function openLoadModal(mode) {
     var modalContainer = document.getElementById('custom-modal-container');
 
     function getSlotInfo(slotNum) {
-        var storageKey = (mode === 'history') ? ('artale_hist_slot_' + slotNum) : ('artale_shift_slot_' + slotNum);
+        // 💡 讀取共用槽位
+        var storageKey = 'artale_shared_slot_' + slotNum;
         var raw = localStorage.getItem(storageKey);
         if (!raw) return ' (尚無存檔)';
         try {
@@ -4760,8 +4825,8 @@ function openLoadModal(mode) {
     modalContainer.innerHTML = 
         '<div class="custom-modal-overlay" onclick="closeCustomModal()">' +
             '<div class="custom-modal-box" onclick="event.stopPropagation()">' +
-                '<h3 style="margin-top:0; color:#0d9488;">📂 選擇要載入的存檔槽位 (共 3 槽)</h3>' +
-                '<p style="font-size:12px; color:#666;">載入後將立即重現當初儲存的完整隊伍與角色陣容。</p>' +
+                '<h3 style="margin-top:0; color:#0d9488;">📂 選擇要載入的共用存檔槽位 (共 3 槽)</h3>' +
+                '<p style="font-size:12px; color:#666;">載入後將立即將槽位中的陣容套用至當前 B 區。</p>' +
                 '<div style="display:flex; flex-direction:column; gap:10px; margin:15px 0;">' +
                     '<button class="btn btn-teal" onclick="executeLoadData(\'' + mode + '\', 1)">📂 載入槽位 #1' + getSlotInfo(1) + '</button>' +
                     '<button class="btn btn-teal" onclick="executeLoadData(\'' + mode + '\', 2)">📂 載入槽位 #2' + getSlotInfo(2) + '</button>' +
@@ -4774,11 +4839,11 @@ function openLoadModal(mode) {
 }
 
 function executeLoadData(mode, slotNum) {
-    var storageKey = (mode === 'history') ? ('artale_hist_slot_' + slotNum) : ('artale_shift_slot_' + slotNum);
+    var storageKey = 'artale_shared_slot_' + slotNum;
     var raw = localStorage.getItem(storageKey);
     
     if (!raw) {
-        alert('⚠️ 槽位 #' + slotNum + ' 目前沒有任何存檔資料！');
+        alert('⚠️ 共用槽位 #' + slotNum + ' 目前沒有任何存檔資料！');
         return;
     }
 
@@ -4806,12 +4871,13 @@ function executeLoadData(mode, slotNum) {
             renderAreaAUnassignedText(unassignedCandidatesState);
         }
 
-        alert('🎉 成功從【存檔槽位 #' + slotNum + '】載入並重現排班陣容！');
+        alert('🎉 成功從【共用存檔槽位 #' + slotNum + '】載入排班陣容！');
         closeCustomModal();
     } catch(e) {
         alert('❌ 載入存檔失敗：' + e.message);
     }
 }
+
 // 🚨 一般排班系統 B 區即時衝突檢核與警示提示功能修復
 // 🚨 修正後：包含志願、同隊重複ID、同時段衝突、以及「出戰時間不吻合檢查」的完整即時驗證
 // 🚨 一般排班系統 B 區即時衝突檢核（修復日期抓取與 4 小時衝突驗證）
@@ -5406,6 +5472,60 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
 });
+
+// 📢 一鍵發布網頁班表 (將 B 區或歷史 B 區的隊伍資料公開發布)
+async function publishWebSchedule(mode) {
+    if (!verifyAdminPasswordForAction()) return;
+    if (!supabaseClient) { alert('雲端尚未連線'); return; }
+
+    var teamsToPublish = (mode === 'history') ? historyInteractiveTeamsState : interactiveTeamsState;
+    if (!teamsToPublish || teamsToPublish.length === 0) {
+        alert('⚠️ 當前 B 區沒有任何排好的隊伍可供發布！');
+        return;
+    }
+
+    var defaultWeekNum = dynamicCurrentWeekNum;
+    var defaultTitle = document.getElementById(mode === 'history' ? 'history-shift-export-title' : 'shift-export-title').innerText;
+
+    var weekNum = prompt("請確認要發布的週數編號：", defaultWeekNum);
+    if (!weekNum) return;
+    
+    var cycleTitle = prompt("請確認週次說明標題：", defaultTitle);
+    if (!cycleTitle) return;
+
+    if (!confirm('📢 確定要將當前排好的 ' + teamsToPublish.length + ' 支隊伍一鍵發布至【📢 突襲班表公佈】嗎？')) return;
+
+    var payload = {
+        week_num: parseInt(weekNum, 10),
+        cycle_title: cycleTitle.trim(),
+        teams_data: teamsToPublish, // 儲存隊伍JSON結構
+        created_at: new Date().toISOString()
+    };
+
+    var dbRes = await supabaseClient.from('artale_schedules').upsert(payload, { onConflict: 'week_num' });
+    if (dbRes.error) {
+        alert('❌ 發布失敗：' + dbRes.error.message);
+    } else {
+        alert('🎉 成功發布網頁版突襲班表！已同步更新至【📢 突襲班表公佈】。');
+        switchTab('schedule-pub');
+    }
+}
+
+// 🗑️ 刪除指定的已發布突襲班表輪次
+async function deletePublishedSchedule(scheduleId) {
+    if (!verifyAdminPasswordForAction()) return;
+    if (!supabaseClient) { alert('雲端尚未連線'); return; }
+
+    if (!confirm('🗑️ 確定要刪除這一輪已發布的突襲班表嗎？刪除後無法復原。')) return;
+
+    var res = await supabaseClient.from('artale_schedules').delete().eq('id', scheduleId);
+    if (res.error) {
+        alert('❌ 刪除失敗：' + res.error.message);
+    } else {
+        alert('🗑️ 已成功刪除該輪班表！');
+        loadPublishedSchedules(); // 重新整理列表
+    }
+}
 
     </script>
 </body>
