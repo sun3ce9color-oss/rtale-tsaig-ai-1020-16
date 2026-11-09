@@ -3167,7 +3167,7 @@ function editHistoryTeamTimeInline(teamId) {
     modalContainer.classList.remove('hidden');
 }
 
-// 💾 確認更新隊伍時間
+// 💾 確認更新隊伍時間（修復同步更新 dateKey Bug）
 function confirmEditTeamTime(teamId, isHistory) {
     var dateVal = document.getElementById('inline-time-date-input').value.trim();
     var timeVal = document.getElementById('inline-time-time-input').value.trim();
@@ -3188,12 +3188,14 @@ function confirmEditTeamTime(teamId, isHistory) {
         var targetTeam = historyInteractiveTeamsState.find(function(t){ return t.id === teamId; });
         if (targetTeam) {
             targetTeam.fullTimeStr = formattedFullStr;
+            targetTeam.dateKey = dateVal; // 👈 關鍵修正：同步更新歷史 dateKey
             renderHistoryInteractiveShiftArea(historyInteractiveTeamsState);
         }
     } else {
         var targetTeam = interactiveTeamsState.find(function(t){ return t.id === teamId; });
         if (targetTeam) {
             targetTeam.fullTimeStr = formattedFullStr;
+            targetTeam.dateKey = dateVal; // 👈 關鍵修正：同步更新一般排班 dateKey
             renderAreaACards(interactiveTeamsState);
             renderInteractiveShiftArea(interactiveTeamsState);
         }
@@ -4812,7 +4814,7 @@ function executeLoadData(mode, slotNum) {
 }
 // 🚨 一般排班系統 B 區即時衝突檢核與警示提示功能修復
 // 🚨 修正後：包含志願、同隊重複ID、同時段衝突、以及「出戰時間不吻合檢查」的完整即時驗證
-
+// 🚨 一般排班系統 B 區即時衝突檢核（修復日期抓取與 4 小時衝突驗證）
 function checkAndRenderBValidationErrors() {
     var validationBox = document.getElementById('shift-b-validation-box');
     var validationList = document.getElementById('shift-b-validation-list');
@@ -4825,11 +4827,13 @@ function checkAndRenderBValidationErrors() {
         var teamBoss = t.boss.replace(/連七|4場|\s+/g, '').trim();
         var userCountInTeam = {};
         
-        var teamDateKey = t.dateKey || '';
-        if (!teamDateKey && t.fullTimeStr) {
+        // 💡 修正日期抓取優先序：優先從最新的 fullTimeStr 拆出 MM/DD
+        var teamDateKey = '';
+        if (t.fullTimeStr) {
             var dateMatch = t.fullTimeStr.match(/(\d{1,2}\/\d{1,2})/);
             if (dateMatch) teamDateKey = dateMatch[1];
         }
+        if (!teamDateKey) teamDateKey = t.dateKey || '';
 
         var teamStartM = 1200; 
         if (t.fullTimeStr) {
@@ -4840,10 +4844,12 @@ function checkAndRenderBValidationErrors() {
         t.members.forEach(function(m) {
             if (m.isEmptySlot || !m.userId || m.userId === '新成員' || m.job === '自訂') return;
             
+            // 檢查志願是否吻合
             if (!hasUserWishedBoss(m, teamBoss)) {
                 errorMessages.push('⚠️ ' + m.userId + '角色(' + m.job + ') 志願不吻合 [' + teamBoss + ']');
             }
 
+            // 檢查玩家在該日期是否有填寫可出戰時間，且時間區段涵蓋該場次
             if (teamDateKey && m.ranges && Array.isArray(m.ranges) && m.ranges.length > 0) {
                 var hasMatchedRange = m.ranges.some(function(r) {
                     if (!isDateMatched(r.dateKey, teamDateKey)) return false;
@@ -4861,6 +4867,7 @@ function checkAndRenderBValidationErrors() {
             userCountInTeam[m.userId] = (userCountInTeam[m.userId] || 0) + 1;
         });
 
+        // 檢測同隊重複 ID
         Object.keys(userCountInTeam).forEach(function(uId) {
             if (userCountInTeam[uId] > 1) {
                 errorMessages.push('🚨 【' + uId + '】玩家重複出現在隊伍【' + t.boss + ' (' + t.fullTimeStr + ')】中！');
@@ -4868,37 +4875,67 @@ function checkAndRenderBValidationErrors() {
         });
     });
 
-    // 2. 檢查跨隊伍的「同時段出戰衝突」
-    var userTimeSlotsMap = {}; 
+    // 2. 🚨 跨隊伍「4 小時 (240 分鐘) 內連排衝突檢測」
+    var playerScheduleList = [];
 
     interactiveTeamsState.forEach(function(t) {
-        var timeKey = t.fullTimeStr.trim();
-        var processedUsersInThisTeam = new Set();
+        var teamDateKey = '';
+        if (t.fullTimeStr) {
+            var dateMatch = t.fullTimeStr.match(/(\d{1,2}\/\d{1,2})/);
+            if (dateMatch) teamDateKey = dateMatch[1];
+        }
+        if (!teamDateKey) teamDateKey = t.dateKey || '';
 
+        var teamStartM = 1200;
+        var timeDisplayStr = '20:00';
+        if (t.fullTimeStr) {
+            var timeMatch = t.fullTimeStr.match(/(\d{1,2}:\d{2})/);
+            if (timeMatch) {
+                timeDisplayStr = timeMatch[1];
+                teamStartM = timeStrToMinutes(timeMatch[1]);
+            }
+        }
+
+        var processedUsersInThisTeam = new Set();
         t.members.forEach(function(m) {
             if (m.isEmptySlot || !m.userId || m.userId === '新成員') return;
             if (processedUsersInThisTeam.has(m.userId)) return;
             processedUsersInThisTeam.add(m.userId);
 
-            var compositeKey = timeKey + '_' + m.userId;
-            if (!userTimeSlotsMap[compositeKey]) {
-                userTimeSlotsMap[compositeKey] = [];
-            }
-            userTimeSlotsMap[compositeKey].push(t.boss);
+            playerScheduleList.push({
+                userId: m.userId,
+                dateKey: teamDateKey,
+                startMinutes: teamStartM,
+                timeStr: timeDisplayStr,
+                boss: t.boss
+            });
         });
     });
 
-    Object.keys(userTimeSlotsMap).forEach(function(compositeKey) {
-        var teamsWithUser = userTimeSlotsMap[compositeKey];
-        if (teamsWithUser.length > 1) {
-            var parts = compositeKey.split('_');
-            var uId = parts[1];
-            var tStr = parts[0];
-            errorMessages.push('🚨 【' + uId + '】玩家在【' + tStr + '】同時段出現在不同隊伍中 (' + teamsWithUser.join(', ') + ')！');
-        }
-    });
+    // 進行交叉兩兩比對，檢查是否在 4 小時 (240分鐘) 內衝突
+    var conflictPairsSet = new Set();
 
-    // 3. 🎫 檢查所有填寫「🎫想使用」的角色的排班數量是否達到 2 支隊伍
+    for (var i = 0; i < playerScheduleList.length; i++) {
+        for (var j = i + 1; j < playerScheduleList.length; j++) {
+            var p1 = playerScheduleList[i];
+            var p2 = playerScheduleList[j];
+
+            if (p1.userId === p2.userId && isDateMatched(p1.dateKey, p2.dateKey)) {
+                var diffMinutes = Math.abs(p1.startMinutes - p2.startMinutes);
+                if (diffMinutes < 240) {
+                    var pairKey = [p1.boss + '(' + p1.timeStr + ')', p2.boss + '(' + p2.timeStr + ')'].sort().join(' 與 ');
+                    var conflictMsg = '🚨 【' + p1.userId + '】玩家在 ' + p1.dateKey + ' 的 4 小時內連排了不同隊伍 (' + pairKey + ')！';
+                    
+                    if (!conflictPairsSet.has(p1.userId + '_' + pairKey)) {
+                        conflictPairsSet.add(p1.userId + '_' + pairKey);
+                        errorMessages.push(conflictMsg);
+                    }
+                }
+            }
+        }
+    }
+
+    // 3. 🎫 檢查所有填寫「🎫想使用」的角色的排班數量
     var charTeamCounts = {};
     var charDetails = {};
 
