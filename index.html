@@ -1026,88 +1026,90 @@ function getMultiJobBackground(selectedJobs) {
         }
 
       function initDeadlineCountdown() {
-            function updateCountdown() {
-                try {
-                    var now = new Date();
-                    // 設定基準點：以 2026/11/07 (週六) 23:59 作為固定錨點
-                    var baseDeadline = new Date(2026, 10, 7, 23, 59, 0); 
-                    var cycleMs = 7 * 24 * 60 * 60 * 1000;
-                    
-                    var targetDeadline = new Date(baseDeadline.getTime());
-                    
-                    // 安全迴圈：自動推算當前的正確週次截止日
-                    for (var i = 0; i < 100; i++) {
-                        var nextOpenCheck = new Date(targetDeadline.getTime());
-                        nextOpenCheck.setDate(nextOpenCheck.getDate() + 3); // 週六 + 3天 = 週二 08:00
-                        nextOpenCheck.setHours(8, 0, 0, 0);
+    function updateCountdown() {
+        try {
+            var now = new Date();
+            
+            // 🎯 修正 1：將基準截止點設定在第 67 週的週六截止日 (2026/11/07 23:59:00)
+            var baseDeadline = new Date(2026, 10, 7, 23, 59, 0); 
+            var cycleMs = 7 * 24 * 60 * 60 * 1000;
+            
+            var targetDeadline = new Date(baseDeadline.getTime());
+            
+            // 自動推算當前的正確週次截止日
+            for (var i = 0; i < 100; i++) {
+                var nextOpenCheck = new Date(targetDeadline.getTime());
+                nextOpenCheck.setDate(nextOpenCheck.getDate() + 3); // 週六 + 3天 = 週二 08:00
+                nextOpenCheck.setHours(8, 0, 0, 0);
 
-                        if (now < nextOpenCheck) {
-                            break;
-                        }
-                        if (now >= targetDeadline && now < nextOpenCheck) {
-                            break;
-                        }
-                        targetDeadline.setTime(targetDeadline.getTime() + cycleMs);
-                    }
-
-                    // 本週結算截止時間（週六 23:59）
-                    var mDl = String(targetDeadline.getMonth() + 1).padStart(2, '0');
-                    var dDl = String(targetDeadline.getDate()).padStart(2, '0');
-                    var dlDateEl = document.getElementById('deadline-date-text');
-                    if (dlDateEl) dlDateEl.innerText = mDl + '/' + dDl + '(週六) 23:59';
-
-                    // 下次開放報名時間：當週週六的 3 天後 = 週二早上 08:00
-                    var nextOpenTime = new Date(targetDeadline.getTime());
-                    nextOpenTime.setDate(nextOpenTime.getDate() + 3); 
-                    nextOpenTime.setHours(8, 0, 0, 0); 
-
-                    var mOpen = String(nextOpenTime.getMonth() + 1).padStart(2, '0');
-                    var dOpen = String(nextOpenTime.getDate()).padStart(2, '0');
-                    currentNextOpenTimeStr = mOpen + '/' + dOpen + '(週二)08:00';
-
-                    var timerEl = document.getElementById('countdown-timer');
-                    
-                    if (now < targetDeadline) {
-                        isRegistrationOpen = true;
-                        var dlPrefix = document.getElementById('deadline-label-prefix');
-                        var statusText = document.getElementById('countdown-status-text');
-                        if (dlPrefix) dlPrefix.style.display = 'inline';
-                        if (statusText) statusText.innerText = '剩餘';
-                        
-                        var diffMs = targetDeadline.getTime() - now.getTime();
-                        var totalSeconds = Math.floor(diffMs / 1000);
-                        var days = Math.floor(totalSeconds / (3600 * 24));
-                        var hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
-                        var minutes = Math.floor((totalSeconds % 3600) / 60);
-                        var seconds = totalSeconds % 60;
-
-                        if (timerEl) timerEl.innerText = days + '天 ' + hours + '時 ' + minutes + '分 ' + seconds + '秒';
-                    } else if (now >= targetDeadline && now < nextOpenTime) {
-                        isRegistrationOpen = false;
-                        var dlPrefix = document.getElementById('deadline-label-prefix');
-                        var statusText = document.getElementById('countdown-status-text');
-                        if (dlPrefix) dlPrefix.style.display = 'none';
-                        if (statusText) statusText.innerText = '倒數下次開放報名時間:' + currentNextOpenTimeStr + ' 剩餘';
-                        
-                        var diffMs = nextOpenTime.getTime() - now.getTime();
-                        var totalSeconds = Math.floor(diffMs / 1000);
-                        var days = Math.floor(totalSeconds / (3600 * 24));
-                        var hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
-                        var minutes = Math.floor((totalSeconds % 3600) / 60);
-                        var seconds = totalSeconds % 60;
-
-                        if (timerEl) timerEl.innerText = days + '天 ' + hours + '時 ' + minutes + '分 ' + seconds + '秒';
-                    } else {
-                        isRegistrationOpen = true;
-                    }
-
-                    checkAndExecuteAutoArchiving(now, targetDeadline);
-                } catch(e) {}
+                if (now < nextOpenCheck) {
+                    break;
+                }
+                if (now >= targetDeadline && now < nextOpenCheck) {
+                    break;
+                }
+                targetDeadline.setTime(targetDeadline.getTime() + cycleMs);
             }
 
-            updateCountdown();
-            setInterval(updateCountdown, 1000);
-        }  
+            // 本週結算截止時間（週六 23:59）
+            var mDl = String(targetDeadline.getMonth() + 1).padStart(2, '0');
+            var dDl = String(targetDeadline.getDate()).padStart(2, '0');
+            var dlDateEl = document.getElementById('deadline-date-text');
+            if (dlDateEl) dlDateEl.innerText = mDl + '/' + dDl + '(週六) 23:59';
+
+            // 下次開放報名時間：週二早上 08:00
+            var nextOpenTime = new Date(targetDeadline.getTime());
+            nextOpenTime.setDate(nextOpenTime.getDate() + 3); 
+            nextOpenTime.setHours(8, 0, 0, 0); 
+
+            var mOpen = String(nextOpenTime.getMonth() + 1).padStart(2, '0');
+            var dOpen = String(nextOpenTime.getDate()).padStart(2, '0');
+            currentNextOpenTimeStr = mOpen + '/' + dOpen + '(週二)08:00';
+
+            var timerEl = document.getElementById('countdown-timer');
+            
+            if (now < targetDeadline) {
+                isRegistrationOpen = true;
+                var dlPrefix = document.getElementById('deadline-label-prefix');
+                var statusText = document.getElementById('countdown-status-text');
+                if (dlPrefix) dlPrefix.style.display = 'inline';
+                if (statusText) statusText.innerText = '剩餘';
+                
+                var diffMs = targetDeadline.getTime() - now.getTime();
+                var totalSeconds = Math.floor(diffMs / 1000);
+                var days = Math.floor(totalSeconds / (3600 * 24));
+                var hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
+                var minutes = Math.floor((totalSeconds % 3600) / 60);
+                var seconds = totalSeconds % 60;
+
+                if (timerEl) timerEl.innerText = days + '天 ' + hours + '時 ' + minutes + '分 ' + seconds + '秒';
+            } else if (now >= targetDeadline && now < nextOpenTime) {
+                isRegistrationOpen = false;
+                var dlPrefix = document.getElementById('deadline-label-prefix');
+                var statusText = document.getElementById('countdown-status-text');
+                if (dlPrefix) dlPrefix.style.display = 'none';
+                if (statusText) statusText.innerText = '倒數下次開放報名時間:' + currentNextOpenTimeStr + ' 剩餘';
+                
+                var diffMs = nextOpenTime.getTime() - now.getTime();
+                var totalSeconds = Math.floor(diffMs / 1000);
+                var days = Math.floor(totalSeconds / (3600 * 24));
+                var hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
+                var minutes = Math.floor((totalSeconds % 3600) / 60);
+                var seconds = totalSeconds % 60;
+
+                if (timerEl) timerEl.innerText = days + '天 ' + hours + '時 ' + minutes + '分 ' + seconds + '秒';
+            } else {
+                isRegistrationOpen = true;
+            }
+
+            // 🎯 傳入計算出的正確截止點，交由自動封存函式檢核
+            checkAndExecuteAutoArchiving(now, targetDeadline);
+        } catch(e) {}
+    }
+
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+}
 
 async function checkAndExecuteAutoArchiving(now, targetDeadline) {
     if (!supabaseClient) return;
@@ -1175,10 +1177,10 @@ async function checkAndExecuteAutoArchiving(now, targetDeadline) {
                     weekCycle.push({ key: key, label: label, month: m, date: date, weekday: dayNames[i] });
                 }
 
-                // 💡 以 2026/11/10 當週作為「第 67 週」基準
-                var refDate = new Date(2026, 10, 10); // 2026/11/10 週二 (第67週)
-                var weeksBetween = Math.round((targetTue.getTime() - refDate.getTime()) / (7 * 24 * 3600 * 1000));
-                dynamicCurrentWeekNum = 67 + weeksBetween;
+                // 💡 將第 67 週的對應基準設為 11/10 當週
+var refDate = new Date(2026, 10, 10); // 2026/11/10 週二 (第67週)
+var weeksBetween = Math.round((targetTue.getTime() - refDate.getTime()) / (7 * 24 * 3600 * 1000));
+dynamicCurrentWeekNum = 67 + weeksBetween;
 
                 var cycleTitleEl = document.getElementById('cycle-title');
                 if (cycleTitleEl) cycleTitleEl.innerText = '第' + dynamicCurrentWeekNum + '週 ' + weekCycle[0].month + '/' + weekCycle[0].date + ' (' + weekCycle[0].weekday + ') ~ ' + weekCycle[6].month + '/' + weekCycle[6].date + ' (' + weekCycle[6].weekday + ')';
