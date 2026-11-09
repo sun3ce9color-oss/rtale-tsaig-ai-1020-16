@@ -1025,51 +1025,64 @@ function getMultiJobBackground(selectedJobs) {
             return false;
         }
 
-      function initDeadlineCountdown() {
+function initDeadlineCountdown() {
     function updateCountdown() {
         try {
             var now = new Date();
             
-            // 🎯 修正 1：將基準截止點設定在第 67 週的週六截止日 (2026/11/07 23:59:00)
-            var baseDeadline = new Date(2026, 10, 7, 23, 59, 0); 
+            // 🎯 設定第 68 週的基準週六截止點 (2026/11/14 23:59:59)
+            var baseSatDeadline = new Date(2026, 10, 14, 23, 59, 59); 
             var cycleMs = 7 * 24 * 60 * 60 * 1000;
             
-            var targetDeadline = new Date(baseDeadline.getTime());
-            
-            // 自動推算當前的正確週次截止日
-            for (var i = 0; i < 100; i++) {
-                var nextOpenCheck = new Date(targetDeadline.getTime());
-                nextOpenCheck.setDate(nextOpenCheck.getDate() + 3); // 週六 + 3天 = 週二 08:00
-                nextOpenCheck.setHours(8, 0, 0, 0);
+            var targetDeadline = new Date(baseSatDeadline.getTime());
 
-                if (now < nextOpenCheck) {
-                    break;
-                }
-                if (now >= targetDeadline && now < nextOpenCheck) {
-                    break;
-                }
+            // 確保找到「包含當前時間」或「未來最近」的週六截止點
+            while (now > targetDeadline) {
                 targetDeadline.setTime(targetDeadline.getTime() + cycleMs);
             }
 
-            // 本週結算截止時間（週六 23:59）
+            // 推算這輪報名對應的開放時間：該週六截止日往回推 4 天又16小時 = 上週二早上 08:00
+            // 例如：11/14 (六) 23:59 的開放時間是 11/10 (二) 08:00:00
+            var openTime = new Date(targetDeadline.getTime() - (4 * 24 * 3600 * 1000) - (15 * 3600 * 1000) - (59 * 60 * 1000) - (59 * 1000));
+            openTime.setHours(8, 0, 0, 0);
+
+            // 本週結算截止時間文字顯示
             var mDl = String(targetDeadline.getMonth() + 1).padStart(2, '0');
             var dDl = String(targetDeadline.getDate()).padStart(2, '0');
             var dlDateEl = document.getElementById('deadline-date-text');
             if (dlDateEl) dlDateEl.innerText = mDl + '/' + dDl + '(週六) 23:59';
 
-            // 下次開放報名時間：週二早上 08:00
-            var nextOpenTime = new Date(targetDeadline.getTime());
-            nextOpenTime.setDate(nextOpenTime.getDate() + 3); 
-            nextOpenTime.setHours(8, 0, 0, 0); 
-
-            var mOpen = String(nextOpenTime.getMonth() + 1).padStart(2, '0');
-            var dOpen = String(nextOpenTime.getDate()).padStart(2, '0');
+            // 下次開放報名時間文字顯示
+            var mOpen = String(openTime.getMonth() + 1).padStart(2, '0');
+            var dOpen = String(openTime.getDate()).padStart(2, '0');
             currentNextOpenTimeStr = mOpen + '/' + dOpen + '(週二)08:00';
 
             var timerEl = document.getElementById('countdown-timer');
             
-            if (now < targetDeadline) {
-                isRegistrationOpen = true;
+            // -------------------------------------------------------------
+            // 階段 1：週六 23:59 後 ~ 週二 08:00 前 (🔒 鎖定模式 / 倒數開報)
+            // -------------------------------------------------------------
+            if (now < openTime) {
+                isRegistrationOpen = false; // 🔒 禁止報名
+                var dlPrefix = document.getElementById('deadline-label-prefix');
+                var statusText = document.getElementById('countdown-status-text');
+                if (dlPrefix) dlPrefix.style.display = 'none';
+                if (statusText) statusText.innerText = '倒數下次開放報名時間:' + currentNextOpenTimeStr + ' 剩餘';
+                
+                var diffMs = openTime.getTime() - now.getTime();
+                var totalSeconds = Math.floor(diffMs / 1000);
+                var days = Math.floor(totalSeconds / (3600 * 24));
+                var hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
+                var minutes = Math.floor((totalSeconds % 3600) / 60);
+                var seconds = totalSeconds % 60;
+
+                if (timerEl) timerEl.innerText = days + '天 ' + hours + '時 ' + minutes + '分 ' + seconds + '秒';
+            } 
+            // -------------------------------------------------------------
+            // 階段 2：週二 08:00 ~ 週六 23:59 (🔓 開放報名模式 / 倒數截止)
+            // -------------------------------------------------------------
+            else {
+                isRegistrationOpen = true; // 🔓 開放報名
                 var dlPrefix = document.getElementById('deadline-label-prefix');
                 var statusText = document.getElementById('countdown-status-text');
                 if (dlPrefix) dlPrefix.style.display = 'inline';
@@ -1083,32 +1096,57 @@ function getMultiJobBackground(selectedJobs) {
                 var seconds = totalSeconds % 60;
 
                 if (timerEl) timerEl.innerText = days + '天 ' + hours + '時 ' + minutes + '分 ' + seconds + '秒';
-            } else if (now >= targetDeadline && now < nextOpenTime) {
-                isRegistrationOpen = false;
-                var dlPrefix = document.getElementById('deadline-label-prefix');
-                var statusText = document.getElementById('countdown-status-text');
-                if (dlPrefix) dlPrefix.style.display = 'none';
-                if (statusText) statusText.innerText = '倒數下次開放報名時間:' + currentNextOpenTimeStr + ' 剩餘';
-                
-                var diffMs = nextOpenTime.getTime() - now.getTime();
-                var totalSeconds = Math.floor(diffMs / 1000);
-                var days = Math.floor(totalSeconds / (3600 * 24));
-                var hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
-                var minutes = Math.floor((totalSeconds % 3600) / 60);
-                var seconds = totalSeconds % 60;
-
-                if (timerEl) timerEl.innerText = days + '天 ' + hours + '時 ' + minutes + '分 ' + seconds + '秒';
-            } else {
-                isRegistrationOpen = true;
             }
 
-            // 🎯 傳入計算出的正確截止點，交由自動封存函式檢核
-            checkAndExecuteAutoArchiving(now, targetDeadline);
+            // 🎯 檢查上一次剛結束的週六點，是否需要觸發封存
+            var lastPassedDeadline = new Date(targetDeadline.getTime() - cycleMs);
+            var timeSinceLastDeadline = now.getTime() - lastPassedDeadline.getTime();
+            if (timeSinceLastDeadline >= 0 && timeSinceLastDeadline <= 60 * 60 * 1000) {
+                executeSafeArchiving(lastPassedDeadline);
+            }
+
         } catch(e) {}
     }
 
     updateCountdown();
     setInterval(updateCountdown, 1000);
+}
+
+// 🛡️ 嚴格防護的封存執行函式
+async function executeSafeArchiving(deadlineObj) {
+    if (!supabaseClient) return;
+    try {
+        // 透過剛剛過期的截止日推算對應的週次編號
+        var refDate = new Date(2026, 10, 7); // 第67週基準
+        var weeksBetween = Math.round((deadlineObj.getTime() - refDate.getTime()) / (7 * 24 * 3600 * 1000));
+        var targetWeekNum = 67 + weeksBetween;
+
+        var res = await supabaseClient.from('artale_members').select('*');
+        
+        // 嚴格檢查：如果資料庫裡完全沒有任何人填寫時間（ranges 是空的），絕對不進行封存！
+        var hasValidBookings = res && res.data && res.data.some(function(m) {
+            return m.ranges && Array.isArray(m.ranges) && m.ranges.length > 0;
+        });
+
+        if (!hasValidBookings) {
+            return; // 沒人填寫就不存空資料進歷史
+        }
+
+        // 檢查該週是否已經封存過
+        var checkRes = await supabaseClient.from('artale_history').select('week_num').eq('week_num', targetWeekNum).maybeSingle();
+        
+        if (!checkRes || !checkRes.data) {
+            var cycleTitleStr = document.getElementById('cycle-title').innerText.replace('動態計算中...', '').trim();
+            await supabaseClient.from('artale_history').upsert({
+                week_num: targetWeekNum,
+                cycle_title: cycleTitleStr || ('第' + targetWeekNum + '週'),
+                members_data: res.data
+            }, { onConflict: 'week_num' });
+            console.log('✅ 第 ' + targetWeekNum + ' 週報名資料已於截止後成功封存！');
+        }
+    } catch(e) {
+        console.error('Safe archiving error:', e);
+    }
 }
 
 async function checkAndExecuteAutoArchiving(now, targetDeadline) {
