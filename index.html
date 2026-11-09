@@ -2234,21 +2234,32 @@ function renderPubMemberCardMarkup(m, loggedInUserId) {
     if (m.isEmptySlot) {
         return '<div class="excel-char-box-empty">➕ ' + m.userId + '</div>';
     }
-    var jobBg = (m.job && m.job !== '自訂') ? ('job-bg-' + m.job) : 'job-bg-default';
+
+    var jobBgStyle = '';
+    var headerText = '';
+    var className = 'excel-job-header';
+
+    if (m.isCustomRole) {
+        // 🎯 自選角色：套用多色漸層背景，僅顯示「自選角色」，隱藏等級
+        var bgGradient = getMultiJobBackground(m.selectedJobs);
+        jobBgStyle = 'background: ' + bgGradient + '; color: #ffffff;';
+        headerText = '自選角色';
+    } else {
+        var jobBg = (m.job && m.job !== '自訂') ? ('job-bg-' + m.job) : 'job-bg-default';
+        className += ' ' + jobBg;
+        headerText = (m.job && m.job !== '自訂') ? (m.job + ' Lv.' + m.level) : '未定職業';
+    }
+
     var mwStr = m.mw20 ? '<span class="text-inline-mw20"><span class="leaf">🍁</span><span class="num">20</span></span>' : '';
     var addStr = m.isExtraTicket ? '<span class="text-inline-ticket">🎫</span>' : '';
-    var headerText = (m.job && m.job !== '自訂') ? (m.job + ' Lv.' + m.level) : '未定職業';
-
-    // 💡 比對是否為登入玩家本人：若為本人，加入專屬發光樣式 class
     var isMyCard = (loggedInUserId && m.userId && m.userId.trim().toLowerCase() === loggedInUserId);
     var glowStyle = isMyCard ? 'border: 2.5px solid #eab308 !important; box-shadow: 0 0 12px rgba(234, 179, 8, 0.9); animation: glow-pulse 1.8s infinite ease-in-out;' : '';
 
     return '<div class="excel-char-box" style="cursor:default; ' + glowStyle + '">' +
-        '<div class="excel-job-header ' + jobBg + '">' + headerText + '</div>' +
+        '<div class="' + className + '" style="' + jobBgStyle + '">' + headerText + '</div>' +
         '<div class="excel-user-body"><span' + (isMyCard ? ' style="color:#ca8a04; font-weight:900;"' : '') + '>' + (isMyCard ? '⭐ ' : '') + m.userId + '</span>' + addStr + mwStr + '</div>' +
     '</div>';
-}        
-
+}
         async function uploadScheduleImage() {
             if (!isAdminLoggedIn) { alert('請先以管理員身份登入！'); return; }
             if (!supabaseClient) { alert('雲端尚未連線'); return; }
