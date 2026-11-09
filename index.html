@@ -344,6 +344,18 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.06); object-fit: contain; margin-top: 8px;
         }
         .char-box.has-mw20-active { background: #fff7ed !important; border-color: #fdba74 !important; box-shadow: 0 2px 8px rgba(234,88,12,0.1); }
+/* 🎯 自選角色專用樣式 */
+.custom-role-badge {
+    font-size: 10px;
+    background: rgba(255, 255, 255, 0.85);
+    color: #1f2937;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: bold;
+    margin-top: 2px;
+    display: inline-block;
+    border: 1px solid rgba(0,0,0,0.1);
+}
     </style>
 </head>
 <body>
@@ -874,6 +886,39 @@
             WARRIOR_DPS: ['英雄', '聖騎'],
             UTILITY_DPS: ['刀賊', '暗影神偷', '拳霸']
         };
+
+// 🎨 各職業代表色定義
+var jobColors = {
+    '黑騎': '#2563eb', '龍騎士': '#2563eb',
+    '聖騎': '#ea580c',
+    '英雄': '#e11d48',
+    '主教': '#b45309',
+    '冰雷': '#0284c7',
+    '火毒': '#dc2626',
+    '箭神': '#16a34a',
+    '神射': '#0d9488',
+    '拳霸': '#78350f',
+    '槍神': '#d946ef',
+    '刀賊': '#4b5563', '暗影神偷': '#4b5563',
+    '鏢賊': '#9333ea', '夜使者': '#9333ea'
+};
+
+// 🌈 根據自選職業陣列動態計算 CSS 漸層背景
+function getMultiJobBackground(selectedJobs) {
+    if (!selectedJobs || selectedJobs.length === 0) return '#6b7280';
+    if (selectedJobs.length === 1) return jobColors[selectedJobs[0]] || '#6b7280';
+    
+    var step = 100 / selectedJobs.length;
+    var gradientStops = [];
+    selectedJobs.forEach(function(job, index) {
+        var color = jobColors[job] || '#6b7280';
+        var start = index * step;
+        var end = (index + 1) * step;
+        gradientStops.push(color + ' ' + start + '%', color + ' ' + end + '%');
+    });
+    
+    return 'linear-gradient(135deg, ' + gradientStops.join(', ') + ')';
+}
 
         function getFormattedBossTitle(rawName) {
             if (!rawName) return '⚔️ 副本';
@@ -2914,21 +2959,36 @@ function renderInteractiveShiftArea(teams) {
             checkAndRenderBValidationErrors();
         }
 
-        function renderInteractiveMemberCardMarkup(t, m, mIdx) {
-            var cardId = 'card-' + t.id + '-' + mIdx;
-            if (m.isEmptySlot) {
-                return '<div class="excel-char-box-empty" id="' + cardId + '" draggable="true" ondragstart="dragTeamMember(event, \'' + t.id + '\', ' + mIdx + ')" ondrop="dropOnTeamMember(event, \'' + t.id + '\', ' + mIdx + ')" ondragover="allowDrop(event)" onclick="addManualMemberForSlot(\'' + t.id + '\', ' + mIdx + ')">➕ ' + m.userId + '</div>';
-            }
-            var jobBg = (m.job && m.job !== '自訂') ? ('job-bg-' + m.job) : 'job-bg-default';
-            var mwStr = m.mw20 ? '<span class="text-inline-mw20"><span class="leaf">🍁</span><span class="num">20</span></span>' : '';
-            var addStr = m.isExtraTicket ? '<span class="text-inline-ticket">🎫</span>' : '';
-            var headerText = (m.job && m.job !== '自訂') ? (m.job + ' Lv.' + m.level) : '未定職業';
+        // 🤖 破破排班系統 (B 區) 卡片渲染
+function renderInteractiveMemberCardMarkup(t, m, mIdx) {
+    var cardId = 'card-' + t.id + '-' + mIdx;
+    if (m.isEmptySlot) {
+        return '<div class="excel-char-box-empty" id="' + cardId + '" draggable="true" ondragstart="dragTeamMember(event, \'' + t.id + '\', ' + mIdx + ')" ondrop="dropOnTeamMember(event, \'' + t.id + '\', ' + mIdx + ')" ondragover="allowDrop(event)" onclick="addManualMemberForSlot(\'' + t.id + '\', ' + mIdx + ')">➕ ' + m.userId + '</div>';
+    }
 
-            return '<div class="excel-char-box" id="' + cardId + '" draggable="true" ondragstart="dragTeamMember(event, \'' + t.id + '\', ' + mIdx + ')" ondrop="dropOnTeamMember(event, \'' + t.id + '\', ' + mIdx + ')" ondragover="allowDrop(event)" oncontextmenu="openCardContextMenu(event, \'' + cardId + '\', \'' + t.id + '\', ' + mIdx + ')">' +
-                '<div class="excel-job-header ' + jobBg + '" onclick="editJobLevelInline(event, \'' + t.id + '\', ' + mIdx + ')">' + headerText + '</div>' +
-                '<div class="excel-user-body"><span>' + m.userId + '</span>' + addStr + mwStr + '</div>' +
-            '</div>';
-        }
+    var jobBgStyle = '';
+    var headerText = '';
+    var className = 'excel-job-header';
+
+    if (m.isCustomRole) {
+        // 自選角色：不顯示等級與括號職業，僅顯示「自選角色」並呈現漸層背景
+        var bgGradient = getMultiJobBackground(m.selectedJobs);
+        jobBgStyle = 'background: ' + bgGradient + '; color: #ffffff;';
+        headerText = '自選角色';
+    } else {
+        var jobBg = (m.job && m.job !== '自訂') ? ('job-bg-' + m.job) : 'job-bg-default';
+        className += ' ' + jobBg;
+        headerText = (m.job && m.job !== '自訂') ? (m.job + ' Lv.' + m.level) : '未定職業';
+    }
+
+    var mwStr = m.mw20 ? '<span class="text-inline-mw20"><span class="leaf">🍁</span><span class="num">20</span></span>' : '';
+    var addStr = m.isExtraTicket ? '<span class="text-inline-ticket">🎫</span>' : '';
+
+    return '<div class="excel-char-box" id="' + cardId + '" draggable="true" ondragstart="dragTeamMember(event, \'' + t.id + '\', ' + mIdx + ')" ondrop="dropOnTeamMember(event, \'' + t.id + '\', ' + mIdx + ')" ondragover="allowDrop(event)" oncontextmenu="openCardContextMenu(event, \'' + cardId + '\', \'' + t.id + '\', ' + mIdx + ')">' +
+        '<div class="' + className + '" style="' + jobBgStyle + '" onclick="editJobLevelInline(event, \'' + t.id + '\', ' + mIdx + ')">' + headerText + '</div>' +
+        '<div class="excel-user-body"><span>' + m.userId + '</span>' + addStr + mwStr + '</div>' +
+    '</div>';
+}
 
         function downloadShiftImage() {
             var exportWrapper = document.getElementById('interactive-shift-export-wrapper');
@@ -3032,21 +3092,35 @@ function renderHistoryInteractiveShiftArea(teams) {
             checkAndRenderHistoryBValidationErrors(); 
         }
 
-        function renderHistoryInteractiveMemberCardMarkup(t, m, mIdx) {
-            var cardId = 'hist-card-' + t.id + '-' + mIdx;
-            if (m.isEmptySlot) {
-                return '<div class="excel-char-box-empty" id="' + cardId + '" draggable="true" ondragstart="dragHistoryTeamMember(event, \'' + t.id + '\', ' + mIdx + ')" ondrop="dropHistoryOnTeamMember(event, \'' + t.id + '\', ' + mIdx + ')" ondragover="allowDrop(event)" onclick="addHistoryManualMemberForSlot(\'' + t.id + '\', ' + mIdx + ')">➕ ' + m.userId + '</div>';
-            }
-            var jobBg = (m.job && m.job !== '自訂') ? ('job-bg-' + m.job) : 'job-bg-default';
-            var mwStr = m.mw20 ? '<span class="text-inline-mw20"><span class="leaf">🍁</span><span class="num">20</span></span>' : '';
-            var addStr = m.isExtraTicket ? '<span class="text-inline-ticket">🎫</span>' : '';
-            var headerText = (m.job && m.job !== '自訂') ? (m.job + ' Lv.' + m.level) : '未定職業';
+        // 📜 歷史檔案紀錄 (歷史 B 區) 卡片渲染
+function renderHistoryInteractiveMemberCardMarkup(t, m, mIdx) {
+    var cardId = 'hist-card-' + t.id + '-' + mIdx;
+    if (m.isEmptySlot) {
+        return '<div class="excel-char-box-empty" id="' + cardId + '" draggable="true" ondragstart="dragHistoryTeamMember(event, \'' + t.id + '\', ' + mIdx + ')" ondrop="dropHistoryOnTeamMember(event, \'' + t.id + '\', ' + mIdx + ')" ondragover="allowDrop(event)" onclick="addHistoryManualMemberForSlot(\'' + t.id + '\', ' + mIdx + ')">➕ ' + m.userId + '</div>';
+    }
 
-            return '<div class="excel-char-box" id="' + cardId + '" draggable="true" ondragstart="dragHistoryTeamMember(event, \'' + t.id + '\', ' + mIdx + ')" ondrop="dropHistoryOnTeamMember(event, \'' + t.id + '\', ' + mIdx + ')" ondragover="allowDrop(event)" oncontextmenu="openHistoryCardContextMenu(event, \'' + cardId + '\', \'' + t.id + '\', ' + mIdx + ')">' +
-                '<div class="excel-job-header ' + jobBg + '" onclick="editHistoryJobLevelInline(event, \'' + t.id + '\', ' + mIdx + ')">' + headerText + '</div>' +
-                '<div class="excel-user-body"><span>' + m.userId + '</span>' + addStr + mwStr + '</div>' +
-            '</div>';
-        }
+    var jobBgStyle = '';
+    var headerText = '';
+    var className = 'excel-job-header';
+
+    if (m.isCustomRole) {
+        var bgGradient = getMultiJobBackground(m.selectedJobs);
+        jobBgStyle = 'background: ' + bgGradient + '; color: #ffffff;';
+        headerText = '自選角色';
+    } else {
+        var jobBg = (m.job && m.job !== '自訂') ? ('job-bg-' + m.job) : 'job-bg-default';
+        className += ' ' + jobBg;
+        headerText = (m.job && m.job !== '自訂') ? (m.job + ' Lv.' + m.level) : '未定職業';
+    }
+
+    var mwStr = m.mw20 ? '<span class="text-inline-mw20"><span class="leaf">🍁</span><span class="num">20</span></span>' : '';
+    var addStr = m.isExtraTicket ? '<span class="text-inline-ticket">🎫</span>' : '';
+
+    return '<div class="excel-char-box" id="' + cardId + '" draggable="true" ondragstart="dragHistoryTeamMember(event, \'' + t.id + '\', ' + mIdx + ')" ondrop="dropHistoryOnTeamMember(event, \'' + t.id + '\', ' + mIdx + ')" ondragover="allowDrop(event)" oncontextmenu="openHistoryCardContextMenu(event, \'' + cardId + '\', \'' + t.id + '\', ' + mIdx + ')">' +
+        '<div class="' + className + '" style="' + jobBgStyle + '" onclick="editHistoryJobLevelInline(event, \'' + t.id + '\', ' + mIdx + ')">' + headerText + '</div>' +
+        '<div class="excel-user-body"><span>' + m.userId + '</span>' + addStr + mwStr + '</div>' +
+    '</div>';
+}
 
         function renderHistoryUnassignedMembers() {
             var countEl = document.getElementById('history-unassigned-count');
@@ -3313,40 +3387,55 @@ function confirmEditTeamTime(teamId, isHistory) {
             renderHistoryInteractiveShiftArea(historyInteractiveTeamsState);
         }
 
-        function openHistoryCardContextMenu(ev, cardId, teamId, mIdx) {
-            ev.preventDefault();
-            ev.stopPropagation();
-            var targetTeam = historyInteractiveTeamsState.find(function(t){ return t.id === teamId; });
-            if (!targetTeam || !targetTeam.members[mIdx]) return;
-            var action = prompt("請選擇操作：\n1. 📋 複製角色卡片\n2. ✏️ 編輯 ID暱稱\n3. 🎨 編輯職業與等級\n4. 🍁 切換 🍁20\n5. 🎫 切換 🎫吃券場標籤\n6. ↩️ 移入未排班區\n7. 🗑️ 完全刪除角色", "1");
-            if (action === "1") {
-                var copied = JSON.parse(JSON.stringify(targetTeam.members[mIdx]));
-                copied.uniqueKey = 'hist-copy-' + Date.now();
-                targetTeam.members.splice(mIdx + 1, 0, copied);
-            } else if (action === "2") {
-                var newId = prompt("請輸入新 ID暱稱：", targetTeam.members[mIdx].userId);
-                if (newId) targetTeam.members[mIdx].userId = newId.trim();
-            } else if (action === "3") {
-                var m = targetTeam.members[mIdx];
-                var newStr = prompt("請輸入職業與等級 (例如: 火毒 150)：", (m.job && m.job !== '自訂') ? (m.job + ' ' + m.level) : '');
-                if (newStr !== null) {
-                    var parts = newStr.trim().split(/\s+/);
-                    if (parts.length >= 2) { m.job = parts[0]; m.level = parseInt(parts[1].replace('Lv.', ''), 10) || 120; }
-                    else if (parts.length === 1 && parts[0] !== '') m.job = parts[0];
-                }
-            } else if (action === "4") {
-                targetTeam.members[mIdx].mw20 = !targetTeam.members[mIdx].mw20;
-            } else if (action === "5") {
-                targetTeam.members[mIdx].isExtraTicket = !targetTeam.members[mIdx].isExtraTicket;
-            } else if (action === "6") {
-                var removed = targetTeam.members.splice(mIdx, 1)[0];
-                if (removed && !removed.isEmptySlot) historyUnassignedCandidatesState.push(removed);
-                renderHistoryUnassignedMembers();
-            } else if (action === "7") {
-                if (confirm('確定要完全刪除此角色卡片？')) targetTeam.members.splice(mIdx, 1);
-            }
-            renderHistoryInteractiveShiftArea(historyInteractiveTeamsState);
+        // 📜 歷史 B 區右鍵選單
+function openHistoryCardContextMenu(ev, cardId, teamId, mIdx) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    var targetTeam = historyInteractiveTeamsState.find(function(t){ return t.id === teamId; });
+    if (!targetTeam || !targetTeam.members[mIdx]) return;
+    var m = targetTeam.members[mIdx];
+
+    var action = prompt("請選擇操作：\n1. 📋 複製角色卡片\n2. ✏️ 編輯 ID暱稱\n3. 🎨 編輯職業與等級 (一般角色)\n4. 🌈 設定/編輯自選角色 (複選多色代表色)\n5. 🍁 切換 🍁20\n6. 🎫 切換 🎫吃券場標籤\n7. ↩️ 移入未排班區\n8. 🗑️ 完全刪除角色", "1");
+    
+    if (action === "1") {
+        var copied = JSON.parse(JSON.stringify(m));
+        copied.uniqueKey = 'hist-copy-' + Date.now();
+        targetTeam.members.splice(mIdx + 1, 0, copied);
+        renderHistoryInteractiveShiftArea(historyInteractiveTeamsState);
+    } else if (action === "2") {
+        var newId = prompt("請輸入新 ID暱稱：", m.userId);
+        if (newId) m.userId = newId.trim();
+        renderHistoryInteractiveShiftArea(historyInteractiveTeamsState);
+    } else if (action === "3") {
+        var newStr = prompt("請輸入職業與等級 (例如: 火毒 150)：", (m.job && !m.isCustomRole) ? (m.job + ' ' + m.level) : '');
+        if (newStr !== null) {
+            var parts = newStr.trim().split(/\s+/);
+            m.isCustomRole = false;
+            if (parts.length >= 2) { m.job = parts[0]; m.level = parseInt(parts[1].replace('Lv.', ''), 10) || 120; }
+            else if (parts.length === 1 && parts[0] !== '') m.job = parts[0];
         }
+        renderHistoryInteractiveShiftArea(historyInteractiveTeamsState);
+    } else if (action === "4") {
+        // 🌈 歷史 B 區設定自選角色
+        openCustomJobEditModal(m, function() {
+            renderHistoryInteractiveShiftArea(historyInteractiveTeamsState);
+        });
+    } else if (action === "5") {
+        m.mw20 = !m.mw20;
+        renderHistoryInteractiveShiftArea(historyInteractiveTeamsState);
+    } else if (action === "6") {
+        m.isExtraTicket = !m.isExtraTicket;
+        renderHistoryInteractiveShiftArea(historyInteractiveTeamsState);
+    } else if (action === "7") {
+        var removed = targetTeam.members.splice(mIdx, 1)[0];
+        if (removed && !removed.isEmptySlot) historyUnassignedCandidatesState.push(removed);
+        renderHistoryUnassignedMembers();
+        renderHistoryInteractiveShiftArea(historyInteractiveTeamsState);
+    } else if (action === "8") {
+        if (confirm('確定要完全刪除此角色卡片？')) targetTeam.members.splice(mIdx, 1);
+        renderHistoryInteractiveShiftArea(historyInteractiveTeamsState);
+    }
+}
 
         function openHistoryUnassignedCardContextMenu(ev, idx) {
             ev.preventDefault();
@@ -3680,42 +3769,64 @@ function editTeamTimeInline(teamId) {
             renderInteractiveShiftArea(interactiveTeamsState);
         }
 
-        function openCardContextMenu(ev, cardId, teamId, mIdx) {
-            ev.preventDefault();
-            ev.stopPropagation();
-            var targetTeam = interactiveTeamsState.find(function(t){ return t.id === teamId; });
-            if (!targetTeam || !targetTeam.members[mIdx]) return;
-            var action = prompt("請選擇操作：\n1. 📋 複製角色卡片\n2. ✏️ 編輯 ID暱稱\n3. 🎨 編輯職業與等級\n4. 🍁 切換 🍁20\n5. 🎫 切換 🎫吃券場標籤\n6. ↩️ 移入未排班區\n7. 🗑️ 完全刪除角色", "1");
-            if (action === "1") {
-                var copied = JSON.parse(JSON.stringify(targetTeam.members[mIdx]));
-                copied.uniqueKey = 'copy-' + Date.now();
-                targetTeam.members.splice(mIdx + 1, 0, copied);
-            } else if (action === "2") {
-                var newId = prompt("請輸入新 ID暱稱：", targetTeam.members[mIdx].userId);
-                if (newId) targetTeam.members[mIdx].userId = newId.trim();
-            } else if (action === "3") {
-                var m = targetTeam.members[mIdx];
-                var newStr = prompt("請輸入職業與等級 (例如: 火毒 150)：", (m.job && m.job !== '自訂') ? (m.job + ' ' + m.level) : '');
-                if (newStr !== null) {
-                    var parts = newStr.trim().split(/\s+/);
-                    if (parts.length >= 2) { m.job = parts[0]; m.level = parseInt(parts[1].replace('Lv.', ''), 10) || 120; }
-                    else if (parts.length === 1 && parts[0] !== '') m.job = parts[0];
-                }
-            } else if (action === "4") {
-                targetTeam.members[mIdx].mw20 = !targetTeam.members[mIdx].mw20;
-            } else if (action === "5") {
-                targetTeam.members[mIdx].isExtraTicket = !targetTeam.members[mIdx].isExtraTicket;
-            } else if (action === "6") {
-                var removed = targetTeam.members.splice(mIdx, 1)[0];
-                if (removed && !removed.isEmptySlot) unassignedCandidatesState.push(removed);
-                renderUnassignedMembers();
-                renderAreaAUnassignedText(unassignedCandidatesState);
-            } else if (action === "7") {
-                if (confirm('確定要完全刪除此角色卡片？')) targetTeam.members.splice(mIdx, 1);
-            }
+        // 🤖 一般 B 區右鍵選單
+function openCardContextMenu(ev, cardId, teamId, mIdx) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    var targetTeam = interactiveTeamsState.find(function(t){ return t.id === teamId; });
+    if (!targetTeam || !targetTeam.members[mIdx]) return;
+    var m = targetTeam.members[mIdx];
+
+    var action = prompt("請選擇操作：\n1. 📋 複製角色卡片\n2. ✏️ 編輯 ID暱稱\n3. 🎨 編輯職業與等級 (一般角色)\n4. 🌈 設定/編輯自選角色 (複選多色代表色)\n5. 🍁 切換 🍁20\n6. 🎫 切換 🎫吃券場標籤\n7. ↩️ 移入未排班區\n8. 🗑️ 完全刪除角色", "1");
+    
+    if (action === "1") {
+        var copied = JSON.parse(JSON.stringify(m));
+        copied.uniqueKey = 'copy-' + Date.now();
+        targetTeam.members.splice(mIdx + 1, 0, copied);
+        renderAreaACards(interactiveTeamsState);
+        renderInteractiveShiftArea(interactiveTeamsState);
+    } else if (action === "2") {
+        var newId = prompt("請輸入新 ID暱稱：", m.userId);
+        if (newId) m.userId = newId.trim();
+        renderAreaACards(interactiveTeamsState);
+        renderInteractiveShiftArea(interactiveTeamsState);
+    } else if (action === "3") {
+        var newStr = prompt("請輸入職業與等級 (例如: 火毒 150)：", (m.job && !m.isCustomRole) ? (m.job + ' ' + m.level) : '');
+        if (newStr !== null) {
+            var parts = newStr.trim().split(/\s+/);
+            m.isCustomRole = false; // 切回一般角色
+            if (parts.length >= 2) { m.job = parts[0]; m.level = parseInt(parts[1].replace('Lv.', ''), 10) || 120; }
+            else if (parts.length === 1 && parts[0] !== '') m.job = parts[0];
+        }
+        renderAreaACards(interactiveTeamsState);
+        renderInteractiveShiftArea(interactiveTeamsState);
+    } else if (action === "4") {
+        // 🌈 設定為自選角色
+        openCustomJobEditModal(m, function() {
             renderAreaACards(interactiveTeamsState);
             renderInteractiveShiftArea(interactiveTeamsState);
-        }
+        });
+    } else if (action === "5") {
+        m.mw20 = !m.mw20;
+        renderAreaACards(interactiveTeamsState);
+        renderInteractiveShiftArea(interactiveTeamsState);
+    } else if (action === "6") {
+        m.isExtraTicket = !m.isExtraTicket;
+        renderAreaACards(interactiveTeamsState);
+        renderInteractiveShiftArea(interactiveTeamsState);
+    } else if (action === "7") {
+        var removed = targetTeam.members.splice(mIdx, 1)[0];
+        if (removed && !removed.isEmptySlot) unassignedCandidatesState.push(removed);
+        renderUnassignedMembers();
+        renderAreaAUnassignedText(unassignedCandidatesState);
+        renderAreaACards(interactiveTeamsState);
+        renderInteractiveShiftArea(interactiveTeamsState);
+    } else if (action === "8") {
+        if (confirm('確定要完全刪除此角色卡片？')) targetTeam.members.splice(mIdx, 1);
+        renderAreaACards(interactiveTeamsState);
+        renderInteractiveShiftArea(interactiveTeamsState);
+    }
+}
 
         function openUnassignedCardContextMenu(ev, idx) {
             ev.preventDefault();
@@ -5525,6 +5636,56 @@ async function deletePublishedSchedule(scheduleId) {
         alert('🗑️ 已成功刪除該輪班表！');
         loadPublishedSchedules(); // 重新整理列表
     }
+}
+
+// 🛠️ 開啟自選職業彈窗
+function openCustomJobEditModal(member, onSaveCallback) {
+    var modalContainer = document.getElementById('custom-modal-container');
+    var allJobs = ['黑騎', '聖騎', '英雄', '主教', '冰雷', '火毒', '箭神', '神射', '拳霸', '槍神', '刀賊', '鏢賊'];
+    var currentSelected = member.selectedJobs || [];
+
+    var checkboxesHtml = '';
+    allJobs.forEach(function(j) {
+        var isChecked = currentSelected.includes(j) ? 'checked' : '';
+        checkboxesHtml += '<label style="display:inline-flex; align-items:center; gap:4px; margin:4px 8px 4px 0; font-size:13px; cursor:pointer;">' +
+            '<input type="checkbox" class="modal-custom-job-chk" value="' + j + '" ' + isChecked + '> ' + j +
+        '</label>';
+    });
+
+    modalContainer.innerHTML = 
+        '<div class="custom-modal-overlay" onclick="closeCustomModal()">' +
+            '<div class="custom-modal-box" onclick="event.stopPropagation()">' +
+                '<h3 style="margin-top:0; color:#0d9488;">🎨 設定自選角色職業代表色</h3>' +
+                '<p style="font-size:12px; color:#666; margin-bottom:10px;">請勾選此角色包含的職業（可複選，卡片將自動展現多色漸層且不顯示等級）：</p>' +
+                '<div style="display:flex; flex-wrap:wrap; max-height:180px; overflow-y:auto; margin-bottom:15px; border:1px solid #eee; padding:8px; border-radius:6px;">' +
+                    checkboxesHtml +
+                '</div>' +
+                '<div style="display:flex; gap:10px;">' +
+                    '<button class="btn btn-teal" style="flex:1;" id="confirm-custom-job-btn">確認儲存</button>' +
+                    '<button class="btn btn-gray" style="flex:1;" onclick="closeCustomModal()">取消</button>' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+
+    modalContainer.classList.remove('hidden');
+
+    document.getElementById('confirm-custom-job-btn').onclick = function() {
+        var checkedJobs = [];
+        document.querySelectorAll('.modal-custom-job-chk:checked').forEach(function(chk) {
+            checkedJobs.push(chk.value);
+        });
+
+        if (checkedJobs.length === 0) {
+            alert('請至少勾選 1 個職業！');
+            return;
+        }
+
+        member.isCustomRole = true;
+        member.selectedJobs = checkedJobs;
+        member.job = checkedJobs.join('+');
+        onSaveCallback();
+        closeCustomModal();
+    };
 }
 
     </script>
