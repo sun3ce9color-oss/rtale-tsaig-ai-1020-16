@@ -356,6 +356,26 @@
     display: inline-block;
     border: 1px solid rgba(0,0,0,0.1);
 }
+
+/* 🌟 有參與的隊伍外框金黃色發光效果 */
+.team-card-highlight {
+    border: 3px solid #eab308 !important; /* 顯眼的黃金色邊框 */
+    box-shadow: 0 0 16px rgba(234, 179, 8, 0.75), 0 0 30px rgba(234, 179, 8, 0.3) !important;
+    animation: team-glow-pulse 2s infinite ease-in-out;
+}
+
+@keyframes team-glow-pulse {
+    0% {
+        box-shadow: 0 0 12px rgba(234, 179, 8, 0.6), 0 0 20px rgba(234, 179, 8, 0.2);
+    }
+    50% {
+        box-shadow: 0 0 22px rgba(234, 179, 8, 0.9), 0 0 35px rgba(234, 179, 8, 0.4);
+    }
+    100% {
+        box-shadow: 0 0 12px rgba(234, 179, 8, 0.6), 0 0 20px rgba(234, 179, 8, 0.2);
+    }
+}
+
     </style>
 </head>
 <body>
@@ -2139,6 +2159,7 @@ if (tab === 'shift') {
         }
 
 // 📢 載入並渲染已發布的突襲班表 (支援圖片與動態網頁雙模式 + 個人發光標示)
+// 📢 載入並渲染已發布的突襲班表 (支援圖片與動態網頁雙模式 + 個人發光標示 + 參與隊伍外框發光)
 async function loadPublishedSchedules() {
     var listEl = document.getElementById('pub-schedules-list');
     if (!listEl) return;
@@ -2186,7 +2207,17 @@ async function loadPublishedSchedules() {
                 var isDragon = t.boss.includes('龍王') || t.size === 12;
                 var wideCardClass = isDragon ? 'dragon-wide-card' : '';
 
-                html += '<div class="shift-team-card ' + boxClass + ' ' + wideCardClass + '" style="cursor:default;">' +
+                // 🔍 檢查該隊伍成員中是否有包含目前登入的玩家
+                var isMyTeam = false;
+                if (myUserId && t.members && Array.isArray(t.members)) {
+                    isMyTeam = t.members.some(function(m) {
+                        return !m.isEmptySlot && m.userId && m.userId.trim().toLowerCase() === myUserId;
+                    });
+                }
+                // 如果有參與，加上 team-card-highlight 樣式類別讓外框發光
+                var teamHighlightClass = isMyTeam ? ' team-card-highlight' : '';
+
+                html += '<div class="shift-team-card ' + boxClass + ' ' + wideCardClass + teamHighlightClass + '" style="cursor:default;">' +
                     '<div class="shift-team-header">' +
                         '<div class="team-title-row">' +
                             '<span style="font-size:15px; font-weight:900;">' + titleWithSymbol + '</span>' +
